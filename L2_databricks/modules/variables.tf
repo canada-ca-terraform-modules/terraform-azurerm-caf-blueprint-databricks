@@ -8,10 +8,6 @@ variable "project" {}
 
 variable "location" {}
 
-variable "domain" {
-  type = any
-}
-
 # Variables for L1 remote state access
 
 variable "L1_terraform_remote_state_account_name" {

@@ -50,8 +50,7 @@ module "databricks-storage-account" {
       }
     }
   }
-  subnets = local.subnets
-  private_dns_zone_ids = local.Project-dns-zone
+  subnets = var.subnets
   tags = var.tags  
 }
 
@@ -72,7 +71,7 @@ resource "azurerm_databricks_workspace" "this" {
 
   custom_parameters {
     # no_public_ip                                         = false
-    virtual_network_id                                   = local.Project-vnet.id
+    virtual_network_id                                   = var.vnet.id
     
     private_subnet_network_security_group_association_id = var.subnets[var.databricks_workspace.private_subnet].id
     private_subnet_name                                  = var.subnets[var.databricks_workspace.private_subnet].object.name
@@ -100,7 +99,7 @@ module "databricks-pe" {
   }
 
   resource_groups = local.resource_groups
-  subnets = local.subnets
+  subnets = var.subnets
   name = azurerm_databricks_workspace.this.name
   location = azurerm_databricks_workspace.this.location
   private_connection_resource_id = azurerm_databricks_workspace.this.id
