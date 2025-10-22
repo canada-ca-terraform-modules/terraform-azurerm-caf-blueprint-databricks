@@ -15,4 +15,16 @@ module "databricks" {
 
     databricks_config = var.databricks_config
     databricks_workspace = var.databricks_workspace
+
+    location = var.location
+    
+    resource_groups = local.resource_groups_L1
+    subnets = local.subnets
+    vnet = local.Project-vnet
+
+    env = var.env
+    group = var.group
+    project = var.project
+    tags = var.tags
+
 }

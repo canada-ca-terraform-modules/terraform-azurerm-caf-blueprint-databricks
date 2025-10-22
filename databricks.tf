@@ -1,15 +1,3 @@
-variable "databricks_workspace" {
-  type = any
-  default = {}
-}
-
-variable "databricks_config" {
-  type = object({
-    account_id = string
-    metastore_id = string
-  })
-}
-
 locals {
   resource_groups = merge(var.resource_groups, { "${var.databricks_workspace.resource_group}" = module.databricks-rg })
 }

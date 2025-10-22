@@ -53,14 +53,13 @@ terraform {
 }
 
 inputs = {
-  # root.hcl include inputs are already part of inputs. Only need to add non included inputs
+  
   L1_terraform_remote_state_account_name        = local.backend_config.storage_account_name
   L1_terraform_remote_state_container_name      = local.backend_config.container_name
   L1_terraform_remote_state_key                 = local.backend_config.L1_remote_state_key
   L1_terraform_remote_state_resource_group_name = local.backend_config.resource_group_name
-  L1_terraform_remote_state_devops_key          = "L1_blueprint_devops/terraform.tfstate" 
   L1_terraform_remote_state_subscription_id     = local.config.subscription_id
-  domain                                        = local.config.domain
-  tags                                          = include.remote.inputs.tags
   databricks_config                             = local.config.databricks
+
+  tags                                          = include.remote.inputs.tags
 }

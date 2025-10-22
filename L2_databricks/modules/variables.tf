@@ -23,9 +23,6 @@ variable "L1_terraform_remote_state_container_name" {
 variable "L1_terraform_remote_state_key" {
   type = string
 }
-variable "L1_terraform_remote_state_devops_key" {
-  type = string
-}
 variable "L1_terraform_remote_state_resource_group_name" {
   type = string
 }
