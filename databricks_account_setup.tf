@@ -1,0 +1,32 @@
+provider "databricks" {
+  alias = "azure_account"
+  host = "https://accounts.azuredatabricks.net"
+  account_id = var.databricks_config.account_id
+}
+
+data "databricks_group" "account_admins" {
+
+  display_name = "Account Admins" # This value is specific to our tenant
+
+  provider = databricks.azure_account
+}
+
+resource "databricks_metastore_assignment" "this" {
+
+  metastore_id = var.databricks_config.metastore_id
+  workspace_id = azurerm_databricks_workspace.this.workspace_id
+
+  provider = databricks.azure_account
+
+  depends_on = [ azurerm_databricks_workspace.this, module.databricks-pe ]
+}
+
+resource "databricks_mws_permission_assignment" "account-admins-are-workspace-admins" {
+
+  workspace_id = azurerm_databricks_workspace.this.workspace_id
+  principal_id = data.databricks_group.account_admins.id
+  permissions = ["ADMIN"]
+
+  provider = databricks.azure_account
+  depends_on = [ databricks_metastore_assignment.this ]
+}
