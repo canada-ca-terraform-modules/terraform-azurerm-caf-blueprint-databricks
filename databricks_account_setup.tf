@@ -21,7 +21,7 @@ data "databricks_group" "account_admins" {
   provider = databricks.azure_account
 }
 
-resource "databrick_mws_permission_assignment" "account-admins-are-workspace-admins" {
+resource "databricks_mws_permission_assignment" "account-admins-are-workspace-admins" {
 
   workspace_id = azurerm_databricks_workspace.this.workspace_id
   principal_id = data.databricks_group.account_admins.id
