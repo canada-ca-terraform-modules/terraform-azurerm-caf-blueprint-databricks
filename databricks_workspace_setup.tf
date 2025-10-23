@@ -61,7 +61,7 @@ resource "databricks_user" "workspace_users" {
   force_delete_repos = try(each.value.user.force_delete_repos, false)
   force_delete_home_dir = try(each.value.user.force_delete_home_dir, false)
   
-  workspace_access = try(each.value.user.workspace_access, false)
+  workspace_access = try(each.value.user.workspace_access, true)
   
   depends_on = [ databricks_mws_permission_assignment.account-admins-are-workspace-admins, terraform_data.workspace-private-endpoint-resolved-ip ]
 

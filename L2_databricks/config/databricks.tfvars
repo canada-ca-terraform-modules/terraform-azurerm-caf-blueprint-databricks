@@ -14,7 +14,6 @@ databricks_workspace = {
   workspace_users = {
     "some.user@org.com" = { 
         display_name = "Some User"
-        workspace_access = true
     }
   }
   
