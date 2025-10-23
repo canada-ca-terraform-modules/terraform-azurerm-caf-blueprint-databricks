@@ -35,8 +35,7 @@ resource "databricks_mws_permission_assignment" "account-admins-are-workspace-ad
   depends_on = [ databricks_metastore_assignment.this ]
 }
 
-# current user is admin
-resource "databricks_mws_permission_assignment" "account-admins-are-workspace-admins" {
+resource "databricks_mws_permission_assignment" "current-user-is-workspace-admins" {
 
   workspace_id = azurerm_databricks_workspace.this.workspace_id
   principal_id = databricks_current_user.me.id
