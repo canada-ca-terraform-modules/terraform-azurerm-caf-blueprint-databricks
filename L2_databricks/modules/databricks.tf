@@ -4,10 +4,7 @@ variable "databricks_workspace" {
 }
 
 variable "databricks_config" {
-  type = object({
-    account_id = string
-    metastore_id = string
-  })
+  type = any
 }
 
 module "databricks" {
