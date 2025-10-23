@@ -45,23 +45,6 @@ data "databricks_current_user" "me" {
   provider = databricks.dbw
 }
 
-data "databricks_group" "account_admins" {
-
-  display_name = var.databricks_config.account_admins_group_name
-
-  provider = databricks.azure_account
-}
-
-resource "databricks_permission_assignment" "account-admins-are-workspace-admins" {
-
-  principal_id = data.databricks_group.account_admins.id
-  permissions = ["ADMIN"]
-
-  provider = databricks.dbw
-  
-  depends_on = [ terraform_data.workspace-private-endpoint-resolved-ip ]
-}
-
 resource "databricks_permission_assignment" "current-user-is-workspace-admin" {
   
   principal_id = data.databricks_current_user.me.id

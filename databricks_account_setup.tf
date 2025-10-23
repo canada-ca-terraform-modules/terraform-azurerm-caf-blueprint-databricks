@@ -13,3 +13,21 @@ resource "databricks_metastore_assignment" "this" {
 
   depends_on = [ azurerm_databricks_workspace.this ]
 }
+
+data "databricks_group" "account_admins" {
+
+  display_name = var.databricks_config.account_admins_group_name
+
+  provider = databricks.azure_account
+}
+
+resource "databrick_mws_permission_assignment" "account-admins-are-workspace-admins" {
+
+  workspace_id = azurerm_databricks_workspace.this.workspace_id
+  principal_id = data.databricks_group.account_admins.id
+  permissions = ["ADMIN"]
+
+  provider = databricks.azure_account
+  
+  depends_on = [ terraform_data.workspace-private-endpoint-resolved-ip ]
+}
