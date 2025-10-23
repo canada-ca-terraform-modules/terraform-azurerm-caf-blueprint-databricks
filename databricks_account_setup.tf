@@ -4,6 +4,10 @@ provider "databricks" {
   account_id = var.databricks_config.account_id
 }
 
+data "databricks_current_user" "me" {
+  provider = databricks.azure_account
+}
+
 data "databricks_group" "account_admins" {
 
   display_name = var.databricks_config.account_admins_group_name
@@ -25,6 +29,17 @@ resource "databricks_mws_permission_assignment" "account-admins-are-workspace-ad
 
   workspace_id = azurerm_databricks_workspace.this.workspace_id
   principal_id = data.databricks_group.account_admins.id
+  permissions = ["ADMIN"]
+
+  provider = databricks.azure_account
+  depends_on = [ databricks_metastore_assignment.this ]
+}
+
+# current user is admin
+resource "databricks_mws_permission_assignment" "account-admins-are-workspace-admins" {
+
+  workspace_id = azurerm_databricks_workspace.this.workspace_id
+  principal_id = databricks_current_user.me.id
   permissions = ["ADMIN"]
 
   provider = databricks.azure_account

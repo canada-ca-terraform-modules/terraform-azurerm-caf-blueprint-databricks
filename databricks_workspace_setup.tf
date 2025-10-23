@@ -148,28 +148,3 @@ resource "databricks_catalog" "default_catalog" {
   ]
 
 }
-
-#required permissions for the provisioning account
-data "databricks_current_user" "me" {
-  provider = databricks.dbw
-}
-
-resource "databricks_grant" "current-user-can-create-the-catalog" {
-
-  external_location = databricks_external_location.catalog.id
-
-  principal = data.databricks_current_user.me.user_name
-  privileges = ["CREATE MANAGED STORAGE", "MANAGE"]
-
-  provider = databricks.dbw
-}
-
-resource "databricks_grant" "current-user-can-delete-the-catalog" {
-
-  catalog = databricks_catalog.default_catalog.id
-
-  principal = data.databricks_current_user.me.user_name
-  privileges = ["MANAGE", "USE CATALOG"]
-
-  provider = databricks.dbw
-}
