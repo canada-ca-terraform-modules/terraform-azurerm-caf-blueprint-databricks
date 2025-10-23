@@ -37,6 +37,8 @@ resource "terraform_data" "workspace-private-endpoint-resolved-ip" {
     exit 1
 EOT
   }
+
+  depends_on = [ databricks_mws_permission_assignment.current-user-is-workspace-admin ]
 }
 
 resource "databricks_user" "workspace_users" {
@@ -63,7 +65,9 @@ resource "databricks_user" "workspace_users" {
   
   workspace_access = try(each.value.user.workspace_access, true)
   
-  depends_on = [ databricks_mws_permission_assignment.account-admins-are-workspace-admins, terraform_data.workspace-private-endpoint-resolved-ip ]
+  depends_on = [ 
+    terraform_data.workspace-private-endpoint-resolved-ip 
+  ]
 
   provider = databricks.dbw
 
@@ -74,7 +78,9 @@ data "databricks_group" "builtin-admins" {
 
   provider = databricks.dbw
 
-  depends_on = [ databricks_mws_permission_assignment.account-admins-are-workspace-admins, terraform_data.workspace-private-endpoint-resolved-ip ]
+  depends_on = [ 
+    terraform_data.workspace-private-endpoint-resolved-ip 
+  ]
 }
 
 resource "databricks_group_member" "workspace-admins" {
@@ -85,7 +91,9 @@ resource "databricks_group_member" "workspace-admins" {
 
   provider = databricks.dbw
 
-  depends_on = [ databricks_mws_permission_assignment.account-admins-are-workspace-admins, terraform_data.workspace-private-endpoint-resolved-ip ]
+  depends_on = [ 
+    terraform_data.workspace-private-endpoint-resolved-ip 
+  ]
 }
 
 resource "databricks_storage_credential" "connector" {
@@ -98,7 +106,10 @@ resource "databricks_storage_credential" "connector" {
   isolation_mode = "ISOLATION_MODE_ISOLATED"
 
   provider = databricks.dbw
-  depends_on = [ azurerm_databricks_access_connector.connector, databricks_mws_permission_assignment.account-admins-are-workspace-admins, terraform_data.workspace-private-endpoint-resolved-ip ]
+  depends_on = [ 
+    azurerm_databricks_access_connector.connector,
+    terraform_data.workspace-private-endpoint-resolved-ip 
+  ]
 }
 
 resource "databricks_external_location" "catalog" {
@@ -112,7 +123,10 @@ resource "databricks_external_location" "catalog" {
   isolation_mode = "ISOLATION_MODE_ISOLATED"
 
   provider = databricks.dbw
-  depends_on = [ azurerm_storage_container.catalog, databricks_mws_permission_assignment.account-admins-are-workspace-admins, terraform_data.workspace-private-endpoint-resolved-ip ]
+  depends_on = [ 
+    azurerm_storage_container.catalog, 
+    terraform_data.workspace-private-endpoint-resolved-ip 
+  ]
 }
 
 resource "databricks_external_location" "data" {
@@ -126,7 +140,10 @@ resource "databricks_external_location" "data" {
   isolation_mode = "ISOLATION_MODE_ISOLATED"
 
   provider = databricks.dbw
-  depends_on = [ azurerm_storage_container.catalog, databricks_mws_permission_assignment.account-admins-are-workspace-admins, terraform_data.workspace-private-endpoint-resolved-ip ]
+  depends_on = [ 
+    azurerm_storage_container.catalog, 
+    terraform_data.workspace-private-endpoint-resolved-ip 
+  ]
 }
 
 resource "databricks_catalog" "default_catalog" {
@@ -142,9 +159,7 @@ resource "databricks_catalog" "default_catalog" {
   provider = databricks.dbw
 
   depends_on = [ 
-    databricks_mws_permission_assignment.account-admins-are-workspace-admins, 
-    terraform_data.workspace-private-endpoint-resolved-ip, 
-    databricks_grant.current-user-can-create-the-catalog
+    terraform_data.workspace-private-endpoint-resolved-ip
   ]
 
 }
