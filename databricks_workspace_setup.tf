@@ -142,7 +142,9 @@ resource "databricks_external_location" "data" {
   depends_on = [ azurerm_storage_container.catalog, databricks_mws_permission_assignment.account-admins-are-workspace-admins, terraform_data.workspace-private-endpoint-resolved-ip ]
 }
 
-data "databricks_current_user" "me" {}
+data "databricks_current_user" "me" {
+  provider = databricks.dbw
+}
 
 resource "databricks_grant" "current-user-can-create-the-catalog" {
 
