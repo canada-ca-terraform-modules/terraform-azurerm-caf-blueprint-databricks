@@ -148,7 +148,7 @@ resource "databricks_grant" "current-user-can-create-the-catalog" {
 
   external_location = databricks_external_location.catalog.id
 
-  principal = data.databricks_current_user.me.name
+  principal = data.databricks_current_user.me.user_name
   privileges = ["CREATE MANAGED STORAGE"]
 
   provider = databricks.dbw
