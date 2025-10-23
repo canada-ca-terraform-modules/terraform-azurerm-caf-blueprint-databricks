@@ -88,19 +88,6 @@ resource "databricks_group_member" "workspace-admins" {
   depends_on = [ databricks_mws_permission_assignment.account-admins-are-workspace-admins, terraform_data.workspace-private-endpoint-resolved-ip ]
 }
 
-resource "databricks_grant" "sandbox" {
-  for_each = var.databricks_workspace.metastore_grants
-
-  metastore = var.databricks_config.metastore_id
-
-  principal = each.key
-  privileges = each.value
-
-  provider = databricks.dbw
-
-  depends_on = [ databricks_mws_permission_assignment.account-admins-are-workspace-admins, terraform_data.workspace-private-endpoint-resolved-ip ]
-}
-
 resource "databricks_storage_credential" "connector" {
 
   name = lower("${azurerm_databricks_access_connector.connector.name}-sc")
@@ -175,15 +162,3 @@ resource "databricks_catalog" "default_catalog" {
   ]
 
 }
-
-# resource "databricks_grant" "admins-can-manage-default-catalog" {
-
-#   catalog = databricks_catalog.default_catalog.name
-
-#   principal = data.databricks_group.account_admins.display_name
-#   privileges = ["MANAGE"]
-
-#   provider = databricks.dbw
-
-#   depends_on = [ databricks_catalog.default_catalog ]
-# }

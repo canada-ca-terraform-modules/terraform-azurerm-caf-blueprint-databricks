@@ -20,12 +20,6 @@ databricks_workspace = {
   
   workspace_admins = ["some.user@org.com"] # must be in the list of workspace users
 
-  metastore_grants = {
-    "some.user@org.com" = [
-      "CREATE_CATALOG",
-    ]
-  }
-
   storage = {
     subnet = "OZ" # Subnet for private endpoints
 
