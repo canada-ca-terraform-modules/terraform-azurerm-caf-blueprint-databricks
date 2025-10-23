@@ -28,6 +28,4 @@ resource "databricks_mws_permission_assignment" "account-admins-are-workspace-ad
   permissions = ["ADMIN"]
 
   provider = databricks.azure_account
-  
-  depends_on = [ terraform_data.workspace-private-endpoint-resolved-ip ]
 }
