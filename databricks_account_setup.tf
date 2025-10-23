@@ -38,7 +38,7 @@ resource "databricks_mws_permission_assignment" "account-admins-are-workspace-ad
 resource "databricks_mws_permission_assignment" "current-user-is-workspace-admin" {
 
   workspace_id = azurerm_databricks_workspace.this.workspace_id
-  principal_id = databricks_current_user.me.id
+  principal_id = data.databricks_current_user.me.id
   permissions = ["ADMIN"]
 
   provider = databricks.azure_account
