@@ -6,7 +6,7 @@ provider "databricks" {
 
 data "databricks_group" "account_admins" {
 
-  display_name = "Account Admins" # This value is specific to our tenant
+  display_name = var.databricks_config.account_admins_group_name
 
   provider = databricks.azure_account
 }
