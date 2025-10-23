@@ -142,6 +142,18 @@ resource "databricks_external_location" "data" {
   depends_on = [ azurerm_storage_container.catalog, databricks_mws_permission_assignment.account-admins-are-workspace-admins, terraform_data.workspace-private-endpoint-resolved-ip ]
 }
 
+data "databricks_current_user" "me" {}
+
+resource "databricks_grant" "current-user-can-create-the-catalog" {
+
+  external_location = databricks_external_location.catalog.id
+
+  principal = data.databricks_current_user.display_name
+  privileges = ["CREATE MANAGED STORAGE"]
+
+  provider = databricks.dbw
+}
+
 resource "databricks_catalog" "default_catalog" {
   
   metastore_id = var.databricks_config.metastore_id
@@ -154,18 +166,22 @@ resource "databricks_catalog" "default_catalog" {
 
   provider = databricks.dbw
 
-  depends_on = [ databricks_mws_permission_assignment.account-admins-are-workspace-admins, terraform_data.workspace-private-endpoint-resolved-ip ]
+  depends_on = [ 
+    databricks_mws_permission_assignment.account-admins-are-workspace-admins, 
+    terraform_data.workspace-private-endpoint-resolved-ip, 
+    databricks_grant.current-user-can-create-the-catalog
+  ]
 
 }
 
-resource "databricks_grant" "admins-can-manage-default-catalog" {
+# resource "databricks_grant" "admins-can-manage-default-catalog" {
 
-  catalog = databricks_catalog.default_catalog.name
+#   catalog = databricks_catalog.default_catalog.name
 
-  principal = data.databricks_group.account_admins.display_name
-  privileges = ["USE_CATALOG", "MANAGE"]
+#   principal = data.databricks_group.account_admins.display_name
+#   privileges = ["MANAGE"]
 
-  provider = databricks.dbw
+#   provider = databricks.dbw
 
-  depends_on = [ databricks_catalog.default_catalog ]
-}
+#   depends_on = [ databricks_catalog.default_catalog ]
+# }
