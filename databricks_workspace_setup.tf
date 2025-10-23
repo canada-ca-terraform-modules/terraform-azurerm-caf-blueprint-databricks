@@ -49,7 +49,7 @@ data "databricks_group" "account_admins" {
 
   display_name = var.databricks_config.account_admins_group_name
 
-  provider = databricks.dbw
+  provider = databricks.azure_account
 }
 
 resource "databricks_permission_assignment" "account-admins-are-workspace-admins" {
