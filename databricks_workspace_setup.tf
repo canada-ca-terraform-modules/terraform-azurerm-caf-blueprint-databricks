@@ -38,7 +38,37 @@ resource "terraform_data" "workspace-private-endpoint-resolved-ip" {
 EOT
   }
 
-  depends_on = [ databricks_mws_permission_assignment.current-user-is-workspace-admin ]
+  depends_on = [ databricks_metastore_assignment.this ]
+}
+
+data "databricks_current_user" "me" {
+  provider = databricks.dbw
+}
+
+data "databricks_group" "account_admins" {
+
+  display_name = var.databricks_config.account_admins_group_name
+
+  provider = databricks.dbw
+}
+
+resource "databricks_permission_assignment" "account-admins-are-workspace-admins" {
+
+  principal_id = data.databricks_group.account_admins.id
+  permissions = ["ADMIN"]
+
+  provider = databricks.dbw
+  
+  depends_on = [ terraform_data.workspace-private-endpoint-resolved-ip ]
+}
+
+resource "databricks_permission_assignment" "current-user-is-workspace-admin" {
+  
+  principal_id = data.databricks_current_user.me.id
+  permissions = ["ADMIN"]
+
+  provider = databricks.dbw
+  depends_on = [ terraform_data.workspace-private-endpoint-resolved-ip ]
 }
 
 resource "databricks_user" "workspace_users" {
@@ -66,7 +96,7 @@ resource "databricks_user" "workspace_users" {
   workspace_access = try(each.value.user.workspace_access, true)
   
   depends_on = [ 
-    terraform_data.workspace-private-endpoint-resolved-ip 
+    databricks_permission_assignment.current-user-is-workspace-admin
   ]
 
   provider = databricks.dbw
@@ -79,7 +109,7 @@ data "databricks_group" "builtin-admins" {
   provider = databricks.dbw
 
   depends_on = [ 
-    terraform_data.workspace-private-endpoint-resolved-ip 
+    databricks_permission_assignment.current-user-is-workspace-admin
   ]
 }
 
@@ -92,7 +122,7 @@ resource "databricks_group_member" "workspace-admins" {
   provider = databricks.dbw
 
   depends_on = [ 
-    terraform_data.workspace-private-endpoint-resolved-ip 
+    databricks_permission_assignment.current-user-is-workspace-admin
   ]
 }
 
@@ -108,7 +138,7 @@ resource "databricks_storage_credential" "connector" {
   provider = databricks.dbw
   depends_on = [ 
     azurerm_databricks_access_connector.connector,
-    terraform_data.workspace-private-endpoint-resolved-ip 
+    databricks_permission_assignment.current-user-is-workspace-admin
   ]
 }
 
@@ -125,7 +155,7 @@ resource "databricks_external_location" "catalog" {
   provider = databricks.dbw
   depends_on = [ 
     azurerm_storage_container.catalog, 
-    terraform_data.workspace-private-endpoint-resolved-ip 
+    databricks_permission_assignment.current-user-is-workspace-admin
   ]
 }
 
@@ -142,7 +172,7 @@ resource "databricks_external_location" "data" {
   provider = databricks.dbw
   depends_on = [ 
     azurerm_storage_container.catalog, 
-    terraform_data.workspace-private-endpoint-resolved-ip 
+    databricks_permission_assignment.current-user-is-workspace-admin
   ]
 }
 
@@ -159,7 +189,7 @@ resource "databricks_catalog" "default_catalog" {
   provider = databricks.dbw
 
   depends_on = [ 
-    terraform_data.workspace-private-endpoint-resolved-ip
+    databricks_permission_assignment.current-user-is-workspace-admin
   ]
 
 }
