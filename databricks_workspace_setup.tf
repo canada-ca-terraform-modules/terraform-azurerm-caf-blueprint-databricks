@@ -133,13 +133,13 @@ resource "databricks_external_location" "base-locations" {
   url = format("abfss://%s@%s.dfs.core.windows.net/", each.value.name, module.databricks-storage-account.name )
   credential_name = databricks_storage_credential.connector.name
 
-  owner = data.databricks_current_user.me.display_name
+  owner = data.databricks_current_user.me.user_name
 
   isolation_mode = "ISOLATION_MODE_ISOLATED"
 
   provider = databricks.dbw
   depends_on = [ 
-    azurerm_storage_container.catalog, 
+    azurerm_storage_container.base-containers, 
     databricks_permission_assignment.current-user-is-workspace-admin
   ]
 }
@@ -148,7 +148,7 @@ resource "databricks_catalog" "default_catalog" {
   
   metastore_id = var.databricks_config.metastore_id
   name = "${var.databricks_workspace.name}_default_catalog"
-  owner = data.databricks_current_user.me.display_name
+  owner = data.databricks_current_user.me.user_name
     
   storage_root = databricks_external_location.base-locations["catalog"].url
   
