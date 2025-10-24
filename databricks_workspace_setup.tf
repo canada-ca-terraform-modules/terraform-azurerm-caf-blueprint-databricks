@@ -125,30 +125,15 @@ resource "databricks_storage_credential" "connector" {
   ]
 }
 
-resource "databricks_external_location" "catalog" {
+resource "databricks_external_location" "base-locations" {
 
-  name = lower("${var.databricks_workspace.name}-catalog-el")
-  url = format("abfss://%s@%s.dfs.core.windows.net/", azurerm_storage_container.catalog.name, module.databricks-storage-account.name )
+  for_each = azurerm_storage_container.base-containers
+
+  name = lower("${var.databricks_workspace.name}-${each.key}-el")
+  url = format("abfss://%s@%s.dfs.core.windows.net/", each.value.name, module.databricks-storage-account.name )
   credential_name = databricks_storage_credential.connector.name
 
-  owner = data.databricks_group.account_admins.display_name
-
-  isolation_mode = "ISOLATION_MODE_ISOLATED"
-
-  provider = databricks.dbw
-  depends_on = [ 
-    azurerm_storage_container.catalog, 
-    databricks_permission_assignment.current-user-is-workspace-admin
-  ]
-}
-
-resource "databricks_external_location" "data" {
-
-  name = lower("${var.databricks_workspace.name}-data-el")
-  url = format("abfss://%s@%s.dfs.core.windows.net/", azurerm_storage_container.data.name, module.databricks-storage-account.name )
-  credential_name = databricks_storage_credential.connector.name
-
-  owner = data.databricks_group.account_admins.display_name
+  owner = data.databricks_current_user.me.display_name
 
   isolation_mode = "ISOLATION_MODE_ISOLATED"
 
@@ -163,9 +148,9 @@ resource "databricks_catalog" "default_catalog" {
   
   metastore_id = var.databricks_config.metastore_id
   name = "${var.databricks_workspace.name}_default_catalog"
-  owner = data.databricks_group.account_admins.display_name
+  owner = data.databricks_current_user.me.display_name
     
-  storage_root = databricks_external_location.catalog.url
+  storage_root = databricks_external_location.base-locations["catalog"].url
   
   isolation_mode = "ISOLATED"
 
