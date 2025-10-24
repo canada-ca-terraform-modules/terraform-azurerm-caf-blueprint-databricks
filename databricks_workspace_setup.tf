@@ -47,6 +47,13 @@ data "databricks_current_user" "me" {
   depends_on = [ terraform_data.workspace-private-endpoint-resolved-ip ]
 }
 
+data "databricks_group" "account_admins_in_workspace" {
+  provider = databricks.dbw
+
+  display_name = var.databricks_config.account_admins_group_name
+  depends_on = [ databricks_mws_permission_assignment.account-admins-are-workspace-admins ]
+}
+
 resource "databricks_permission_assignment" "current-user-is-workspace-admin" {
   
   principal_id = data.databricks_current_user.me.id
@@ -127,6 +134,16 @@ resource "databricks_storage_credential" "connector" {
   ]
 }
 
+resource "databricks_grant" "account_admins_can_manage_credential" {
+  
+  storage_credential = databricks_storage_credential.connector.id
+
+  principal = data.databricks_group.account_admins_in_workspace.display_name
+  privileges = ["MANAGE"]
+
+  provider = databricks.dbw
+}
+
 resource "databricks_external_location" "base-locations" {
 
   for_each = azurerm_storage_container.base-containers
@@ -146,6 +163,17 @@ resource "databricks_external_location" "base-locations" {
   ]
 }
 
+resource "databricks_grant" "account_admins_can_manage_external_locations" {
+  for_each = databricks_external_location.base-locations
+
+  external_location = each.value.id
+
+  principal = data.databricks_group.account_admins_in_workspace.display_name
+  privileges = ["MANAGE"]
+
+  provider = databricks.dbw
+}
+
 resource "databricks_catalog" "default_catalog" {
   
   metastore_id = var.databricks_config.metastore_id
@@ -162,4 +190,14 @@ resource "databricks_catalog" "default_catalog" {
     databricks_permission_assignment.current-user-is-workspace-admin
   ]
 
+}
+
+resource "databricks_grant" "account_admins_can_manage_default_catalog" {
+  
+  catalog = databricks_catalog.default_catalog.id
+
+  principal = data.databricks_group.account_admins_in_workspace.display_name
+  privileges = ["MANAGE"]
+
+  provider = databricks.dbw
 }
