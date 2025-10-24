@@ -43,6 +43,8 @@ EOT
 
 data "databricks_current_user" "me" {
   provider = databricks.dbw
+
+  depends_on = [ terraform_data.workspace-private-endpoint-resolved-ip ]
 }
 
 resource "databricks_permission_assignment" "current-user-is-workspace-admin" {
