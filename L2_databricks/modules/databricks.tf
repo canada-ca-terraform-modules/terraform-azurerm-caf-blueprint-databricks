@@ -8,7 +8,7 @@ variable "databricks_config" {
 }
 
 module "databricks" {
-    source = "github.com/canada-ca-terraform-modules/terraform-azurerm-caf-blueprint-databricks?ref=mvp"
+    source = "github.com/canada-ca-terraform-modules/terraform-azurerm-caf-blueprint-databricks?ref=V0.1.0"
 
     databricks_config = var.databricks_config
     databricks_workspace = var.databricks_workspace
