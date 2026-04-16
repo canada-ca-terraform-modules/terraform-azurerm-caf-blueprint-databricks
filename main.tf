@@ -11,5 +11,8 @@ terraform {
     databricks = {
       source = "databricks/databricks"
     }
+    azapi = {
+      source = "azure/azapi"
+    }
   }
 }

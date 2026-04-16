@@ -1,67 +1,28 @@
 provider "databricks" {
   alias = "dbw"
-  host = azurerm_databricks_workspace.this.workspace_url
-}
-
-resource "terraform_data" "workspace-private-endpoint-resolved-ip" {
-  
-  input = {
-    local_ip = module.databricks-pe.private-endpoint-object.private_service_connection[0].private_ip_address
-    workspace_fqdn = azurerm_databricks_workspace.this.workspace_url
-  }
-
-  provisioner "local-exec" {
-    environment = {
-      url = azurerm_databricks_workspace.this.workspace_url
-      expected_ip = module.databricks-pe.private-endpoint-object.private_service_connection[0].private_ip_address
-    }
-
-    when = create
-
-    command = <<-EOT
-    timeout_seconds=2000 # DNS TTL is 1800s, and Private DNS takes a few minutes to deploy
-    sleep_seconds=30
-
-    while [ $timeout_seconds -gt 0 ]; do
-      ip=$(getent hosts $url | awk '{ print $1 }')
-      timeout_seconds=$((timeout_seconds - sleep_seconds))
-
-      if [ "$ip" = "$expected_ip" ]; then
-        echo "$ip is looked up correctly. Ok to proceed with workspace configuration."
-        exit 0
-      fi
-      echo "Resolved as $ip instead of $expected_ip. Sleeping for $sleep_seconds seconds."
-      sleep $sleep_seconds
-    done
-    echo "Timeout of $sleep_seconds seconds reached"
-    exit 1
-EOT
-  }
-
-  depends_on = [ databricks_metastore_assignment.this ]
+  host = azapi_resource.databricks.output.properties.workspaceUrl
 }
 
 data "databricks_current_user" "me" {
   provider = databricks.dbw
-
-  depends_on = [ terraform_data.workspace-private-endpoint-resolved-ip ]
 }
 
 data "databricks_group" "account_admins_in_workspace" {
   provider = databricks.dbw
 
   display_name = var.databricks_config.account_admins_group_name
-  depends_on = [ databricks_mws_permission_assignment.account-admins-are-workspace-admins ]
+  depends_on = [ 
+    databricks_mws_permission_assignment.account-admins-are-workspace-admins 
+  ]
 }
 
-resource "databricks_permission_assignment" "current-user-is-workspace-admin" {
+# resource "databricks_permission_assignment" "current-user-is-workspace-admin" {
   
-  principal_id = data.databricks_current_user.me.id
-  permissions = ["ADMIN"]
+#   principal_id = data.databricks_current_user.me.id
+#   permissions = ["ADMIN"]
 
-  provider = databricks.dbw
-  depends_on = [ terraform_data.workspace-private-endpoint-resolved-ip ]
-}
+#   provider = databricks.dbw
+# }
 
 resource "databricks_user" "workspace_users" {
   for_each = {
@@ -87,9 +48,7 @@ resource "databricks_user" "workspace_users" {
   
   workspace_access = try(each.value.user.workspace_access, true)
   
-  depends_on = [ 
-    databricks_permission_assignment.current-user-is-workspace-admin
-  ]
+  depends_on = [ databricks_metastore_assignment.this ]
 
   provider = databricks.dbw
 
@@ -100,9 +59,7 @@ data "databricks_group" "builtin-admins" {
 
   provider = databricks.dbw
 
-  depends_on = [ 
-    databricks_permission_assignment.current-user-is-workspace-admin
-  ]
+  depends_on = [ databricks_mws_permission_assignment.account-admins-are-workspace-admins ]
 }
 
 resource "databricks_group_member" "workspace-admins" {
@@ -114,7 +71,7 @@ resource "databricks_group_member" "workspace-admins" {
   provider = databricks.dbw
 
   depends_on = [ 
-    databricks_permission_assignment.current-user-is-workspace-admin
+    databricks_metastore_assignment.this
   ]
 }
 
@@ -130,7 +87,7 @@ resource "databricks_storage_credential" "connector" {
   provider = databricks.dbw
   depends_on = [ 
     azurerm_databricks_access_connector.connector,
-    databricks_permission_assignment.current-user-is-workspace-admin
+    databricks_metastore_assignment.this
   ]
 }
 
@@ -142,14 +99,21 @@ resource "databricks_grant" "account_admins_can_manage_credential" {
   privileges = ["MANAGE"]
 
   provider = databricks.dbw
+
+  depends_on = [ 
+    databricks_metastore_assignment.this
+  ]
 }
 
 resource "databricks_external_location" "base-locations" {
 
-  for_each = azurerm_storage_container.base-containers
+  for_each = { for container in local.base_storage_containers :
+    container => azurerm_storage_container.base-containers[container]
+    if lookup(azurerm_storage_container.base-containers, container, null) != null
+  } 
 
   name = lower("${var.databricks_workspace.name}-${each.key}-el")
-  url = format("abfss://%s@%s.dfs.core.windows.net/", each.value.name, module.databricks-storage-account.name )
+  url = format("abfss://%s@%s.dfs.core.windows.net/", each.key, module.databricks-storage-account.name )
   credential_name = databricks_storage_credential.connector.name
 
   owner = data.databricks_current_user.me.user_name
@@ -159,12 +123,16 @@ resource "databricks_external_location" "base-locations" {
   provider = databricks.dbw
   depends_on = [ 
     azurerm_storage_container.base-containers, 
-    databricks_permission_assignment.current-user-is-workspace-admin
+    databricks_metastore_assignment.this
   ]
 }
 
 resource "databricks_grant" "account_admins_can_manage_external_locations" {
-  for_each = databricks_external_location.base-locations
+for_each = { 
+  for container in local.base_storage_containers : 
+    container => databricks_external_location.base-locations[container] 
+    if lookup(databricks_external_location.base-locations, container, null) != null
+  }
 
   external_location = each.value.id
 
@@ -172,6 +140,9 @@ resource "databricks_grant" "account_admins_can_manage_external_locations" {
   privileges = ["MANAGE"]
 
   provider = databricks.dbw
+  depends_on = [ 
+    databricks_metastore_assignment.this
+  ]
 }
 
 resource "databricks_catalog" "default_catalog" {
@@ -187,7 +158,7 @@ resource "databricks_catalog" "default_catalog" {
   provider = databricks.dbw
 
   depends_on = [ 
-    databricks_permission_assignment.current-user-is-workspace-admin
+    databricks_metastore_assignment.this
   ]
 
 }
@@ -200,4 +171,8 @@ resource "databricks_grant" "account_admins_can_manage_default_catalog" {
   privileges = ["MANAGE"]
 
   provider = databricks.dbw
+
+  depends_on = [ 
+    databricks_metastore_assignment.this
+  ]
 }

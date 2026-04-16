@@ -1,36 +1,65 @@
-resource "azurerm_databricks_workspace" "this" {
+data "azapi_client_config" "current" {
+}
 
-  name                        = "${var.env}-${var.group}-${var.project}-${var.databricks_workspace.name}-dbw"
-  resource_group_name         = module.databricks-rg.name
-  location                    = module.databricks-rg.location
-  sku                         = try(var.databricks_workspace.sku, "premium")
-  
-  #TODO: use our naming for the managed RG as well. Can't be the same as the workspace RG
-  managed_resource_group_name = "${var.databricks_workspace.name}-${module.databricks-rg.name}"
+resource "azapi_resource" "databricks" {
+  name      = "${var.env}-${var.group}-${var.project}-${var.databricks_workspace.name}-dbw"
+  type      = "Microsoft.Databricks/workspaces@2025-08-01-preview"
+  location  = var.location
+  parent_id = module.databricks-rg.id
+  tags = var.tags
 
-  public_network_access_enabled = false
-  network_security_group_rules_required = "NoAzureDatabricksRules"
-
-  tags                        = var.tags
-
-  custom_parameters {
-    # no_public_ip                                         = false
-    virtual_network_id                                   = var.vnet.id
+  body = {
+    sku = {
+        name = try(var.databricks_workspace.sku, "premium")
+      }
+    properties = {
+      managedResourceGroupId = "${data.azapi_client_config.current.subscription_resource_id}/resourceGroups/${var.databricks_workspace.name}-${module.databricks-rg.name}"
+      #computeMode = "Hybrid"
+      enhancedSecurityCompliance = {
+        automaticClusterUpdate = {
+          value = "Enabled"
+        }
+        complianceSecurityProfile = {
+          complianceStandards = [
+            "CANADA_PROTECTED_B"
+          ]
+          value = "Enabled"
+        }
+        enhancedSecurityMonitoring = {
+          value = "Enabled"
+        }
+      }
+      requiredNsgRules = "NoAzureDatabricksRules"
+      publicNetworkAccess = "Enabled"
+      parameters = { 
+        
+        customPrivateSubnetName = {
+          type = "String"
+          value = var.subnets[var.databricks_workspace.private_subnet].object.name
+        }
+        customPublicSubnetName = {
+          type = "String"
+          value = var.subnets[var.databricks_workspace.public_subnet].object.name
+        }
+        customVirtualNetworkId = {
+          type = "String"
+          value = var.vnet.id
+        }
+        enableNoPublicIp = {
+          type = "Bool"
+          value = true
+        }
+      }
+      
+    }
     
-    private_subnet_network_security_group_association_id = var.subnets[var.databricks_workspace.private_subnet].id
-    private_subnet_name                                  = var.subnets[var.databricks_workspace.private_subnet].object.name
-
-    public_subnet_network_security_group_association_id  = var.subnets[var.databricks_workspace.public_subnet].id
-    public_subnet_name                                   = var.subnets[var.databricks_workspace.public_subnet].object.name
   }
 
-  # https://learn.microsoft.com/en-us/azure/databricks/security/privacy/security-profile
-  # enhanced_security_compliance {
-  #   compliance_security_profile_enabled = true
-  #   compliance_security_profile_standards = ["HIPAA", "PCI_DSS"]
-  #   automatic_cluster_update_enabled = false
-  #   enhanced_security_monitoring_enabled = false
-  # }
+  response_export_values = ["*"]
+
+  lifecycle {
+    ignore_changes = [ body.properties.publicNetworkAccess ]
+  }
 }
 
 module "databricks-pe" {
@@ -44,19 +73,19 @@ module "databricks-pe" {
 
   resource_groups = local.resource_groups
   subnets = var.subnets
-  name = azurerm_databricks_workspace.this.name
-  location = azurerm_databricks_workspace.this.location
-  private_connection_resource_id = azurerm_databricks_workspace.this.id
+  name = azapi_resource.databricks.output.name
+  location = azapi_resource.databricks.output.location
+  private_connection_resource_id = azapi_resource.databricks.id
   tags = var.tags
 
-  depends_on = [ azurerm_databricks_workspace.this ]
+  depends_on = [ azapi_resource.databricks ]
 
 }
 
 resource "azurerm_databricks_access_connector" "connector" {
-  name                = "${azurerm_databricks_workspace.this.name}-con"
-  resource_group_name = azurerm_databricks_workspace.this.resource_group_name
-  location            = azurerm_databricks_workspace.this.location
+  name                = "${azapi_resource.databricks.name}-con"
+  resource_group_name = module.databricks-rg.name
+  location            = azapi_resource.databricks.output.location
 
   identity {
     type = "SystemAssigned"

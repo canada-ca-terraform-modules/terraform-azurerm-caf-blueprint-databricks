@@ -61,9 +61,12 @@ resource "azurerm_role_assignment" "data_share_access" {
   principal_id         = each.value.object_id
 }
 
+locals {
+  base_storage_containers = toset(["catalog", "data"])
+}
 resource "azurerm_storage_container" "base-containers" {
 
-  for_each = toset(["catalog", "data"])
+  for_each = local.base_storage_containers
 
   name = each.key
   storage_account_id = module.databricks-storage-account.id

@@ -11,6 +11,9 @@ terraform {
     databricks = {
       source = "databricks/databricks"
     }
+    azapi = {
+      source = "azure/azapi"
+    }
   }
 }
 
@@ -20,5 +23,9 @@ provider "azurerm" {
 }
 
 provider "azuread" {
+  
+}
+
+provider "azapi" {
   
 }
