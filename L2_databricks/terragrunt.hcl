@@ -12,6 +12,8 @@ locals {
   tfvars_json_args = [for x in local.all_json_tfvars : "--var-file=${local.tfvars_dir}/${x}"]
 
   merge_tfvars = concat(local.tfvar_args, local.tfvars_json_args)
+
+  release = "v0.1.0" # Update with the desired release tag or branch
 }
 
 # stage/mysql/root.hcl
@@ -25,7 +27,7 @@ dependencies {
 }
 
 terraform {
-  source = "./modules"
+  source = "github.com/canada-ca-terraform-modules/terraform-azurerm-caf-blueprint-databricks?ref=${local.release}//L2_databricks/modules"
 
   extra_arguments "apply" {
     commands = [
@@ -59,7 +61,6 @@ inputs = {
   L1_terraform_remote_state_key                 = local.backend_config.L1_remote_state_key
   L1_terraform_remote_state_resource_group_name = local.backend_config.resource_group_name
   L1_terraform_remote_state_subscription_id     = local.config.subscription_id
-  databricks_config                             = local.config.databricks
 
   tags                                          = include.remote.inputs.tags
 }
