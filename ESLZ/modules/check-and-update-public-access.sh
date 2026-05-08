@@ -34,12 +34,10 @@ fi
 
 wait_for_provisioning_state_succeeded
 
-CURRENT_STATE=$(\
+PUBLIC_NETWORK_ACCESS=$(\
   az rest --method GET --uri $REST_ENDPOINT -o json | \
   jq -r '.properties.publicNetworkAccess' \
 )
-
-PUBLIC_NETWORK_ACCESS=$(echo $CURRENT_STATE | jq -r '.publicNetworkAccess')
 
 echo "Current value of public network access: $PUBLIC_NETWORK_ACCESS"
 
