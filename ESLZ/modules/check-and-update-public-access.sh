@@ -4,7 +4,7 @@ WORKSPACE_ID=$("$TG_CTX_TF_PATH" output -raw workspace_id)
 
 if [[ "$WORKSPACE_ID" =~ "No outputs found" ]]; then
   # try looking it up in the state file
-  WORKSPACE_ID=$("$TG_CTX_TF_PATH" show | egrep 'providers/Microsoft.Databricks/workspaces/[^/]+"' | head -1 |cut -d '=' -f 2|tr -d '"')
+  WORKSPACE_ID=$("$TG_CTX_TF_PATH" show | egrep 'providers/Microsoft.Databricks/workspaces/[^/]+"' | head -1 |cut -d '=' -f 2|tr -d '" ')
 
   if [[ -z "$WORKSPACE_ID" ]]; then
     echo "Error: Unable to retrieve workspace ID from Terraform state. Skipping public access check."
