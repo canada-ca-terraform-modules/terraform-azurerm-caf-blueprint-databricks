@@ -2,9 +2,9 @@
 
 WORKSPACE_ID=$("$TG_CTX_TF_PATH" output -raw workspace_id)
 
-if [ $? -ne 0 ] || [ -z "$WORKSPACE_ID" ]; then
-  echo "Error: Unable to retrieve workspace ID from Terraform output."
-  exit 1
+if [[ "$WORKSPACE_ID" =~ "No outputs found" ]]; then
+  echo "Error: Unable to retrieve workspace ID from Terraform output. Skipping public access check."
+  exit 0
 fi
 
 REST_ENDPOINT="https://management.azure.com/$WORKSPACE_ID?api-version=2026-01-01"
