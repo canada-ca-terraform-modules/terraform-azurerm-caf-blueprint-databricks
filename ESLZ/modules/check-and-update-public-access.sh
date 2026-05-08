@@ -12,6 +12,8 @@ if [[ "$WORKSPACE_ID" =~ "No outputs found" ]]; then
   fi
 fi
 
+echo "Retrieved workspace ID: '$WORKSPACE_ID'"
+
 REST_ENDPOINT="https://management.azure.com/$WORKSPACE_ID?api-version=2026-01-01"
 
 function wait_for_provisioning_state_succeeded() {
