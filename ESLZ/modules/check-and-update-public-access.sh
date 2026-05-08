@@ -28,8 +28,7 @@ function wait_for_provisioning_state_succeeded() {
 NETWORK_ACCESS_DESIRED_STATE="Disabled"
 
 if [ "$TG_CTX_COMMAND" = "destroy" ]; then
-  NETWORK_ACCESS_DESIRED_STATE="Enabled"
-  exit 0
+  NETWORK_ACCESS_DESIRED_STATE="Enabled"  
 fi
 
 wait_for_provisioning_state_succeeded
