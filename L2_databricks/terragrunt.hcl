@@ -29,6 +29,16 @@ dependencies {
 terraform {
   source = "github.com/canada-ca-terraform-modules/terraform-azurerm-caf-blueprint-databricks?ref=${local.release}//ESLZ/modules"
 
+  before_hook "check_and_update_public_access" {
+    commands = ["destroy"]
+    execute  = ["./check-and-update-public-access.sh"]
+  }
+
+   after_hook "check_and_update_public_access" {
+    commands = ["apply"]
+    execute  = ["./check-and-update-public-access.sh"]
+  }
+
   extra_arguments "apply" {
     commands = [
       "apply"
@@ -52,6 +62,8 @@ terraform {
     }
     arguments = local.merge_tfvars # Adding the dynamically generated tfvar files
   }
+
+
 }
 
 inputs = {
