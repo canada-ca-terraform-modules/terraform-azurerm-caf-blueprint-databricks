@@ -7,14 +7,12 @@ data "databricks_current_user" "me" {
   provider = databricks.dbw
 }
 
-data "databricks_group" "account_admins_in_workspace" {
-  provider = databricks.dbw
+# data "databricks_group" "account_admins_in_workspace" {
+#   provider = databricks.dbw
 
-  display_name = var.databricks_config.account_admins_group_name
-  depends_on = [ 
-    databricks_mws_permission_assignment.account-admins-are-workspace-admins 
-  ]
-}
+#   display_name = var.databricks_config.account_admins_group_name
+#   depends_on = [ databricks_metastore_assignment.this ]
+# }
 
 # resource "databricks_permission_assignment" "current-user-is-workspace-admin" {
   
@@ -59,7 +57,7 @@ data "databricks_group" "builtin-admins" {
 
   provider = databricks.dbw
 
-  depends_on = [ databricks_mws_permission_assignment.account-admins-are-workspace-admins ]
+  depends_on = [ databricks_metastore_assignment.this ]
 }
 
 resource "databricks_group_member" "workspace-admins" {
@@ -71,7 +69,7 @@ resource "databricks_group_member" "workspace-admins" {
   provider = databricks.dbw
 
   depends_on = [ 
-    databricks_metastore_assignment.this
+    databricks_mws_permission_assignment.account-admins-are-workspace-admins
   ]
 }
 
@@ -95,7 +93,7 @@ resource "databricks_grant" "account_admins_can_manage_credential" {
   
   storage_credential = databricks_storage_credential.connector.id
 
-  principal = data.databricks_group.account_admins_in_workspace.display_name
+  principal = data.databricks_group.account_admins.display_name
   privileges = ["MANAGE"]
 
   provider = databricks.dbw
@@ -136,12 +134,12 @@ for_each = {
 
   external_location = each.value.id
 
-  principal = data.databricks_group.account_admins_in_workspace.display_name
+  principal = data.databricks_group.account_admins.display_name
   privileges = ["MANAGE"]
 
   provider = databricks.dbw
   depends_on = [ 
-    databricks_metastore_assignment.this
+    databricks_mws_permission_assignment.account-admins-are-workspace-admins
   ]
 }
 
@@ -167,12 +165,12 @@ resource "databricks_grant" "account_admins_can_manage_default_catalog" {
   
   catalog = databricks_catalog.default_catalog.id
 
-  principal = data.databricks_group.account_admins_in_workspace.display_name
+  principal = data.databricks_group.account_admins.display_name
   privileges = ["MANAGE"]
 
   provider = databricks.dbw
 
   depends_on = [ 
-    databricks_metastore_assignment.this
+    databricks_mws_permission_assignment.account-admins-are-workspace-admins
   ]
 }

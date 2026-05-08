@@ -25,5 +25,6 @@ variable "databricks_config" {
     account_id = string
     metastore_id = string
     account_admins_group_name = string
+    protected_b = optional(bool, false)
   })
 }

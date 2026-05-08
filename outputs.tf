@@ -1,5 +1,5 @@
 output "workspace" {
-  value = azapi_resource.databricks
+  value = azapi_resource.databricks.output
 }
 
 output "storage" {

@@ -1,21 +1,9 @@
 data "azapi_client_config" "current" {
 }
 
-resource "azapi_resource" "databricks" {
-  name      = "${var.env}-${var.group}-${var.project}-${var.databricks_workspace.name}-dbw"
-  type      = "Microsoft.Databricks/workspaces@2025-08-01-preview"
-  location  = var.location
-  parent_id = module.databricks-rg.id
-  tags = var.tags
-
-  body = {
-    sku = {
-        name = try(var.databricks_workspace.sku, "premium")
-      }
-    properties = {
-      managedResourceGroupId = "${data.azapi_client_config.current.subscription_resource_id}/resourceGroups/${var.databricks_workspace.name}-${module.databricks-rg.name}"
-      #computeMode = "Hybrid"
-      enhancedSecurityCompliance = {
+locals {
+  protected_b = {
+    enhancedSecurityCompliance = {
         automaticClusterUpdate = {
           value = "Enabled"
         }
@@ -29,8 +17,15 @@ resource "azapi_resource" "databricks" {
           value = "Enabled"
         }
       }
+  }
+
+  workspace_properties = merge({
+      managedResourceGroupId = "${data.azapi_client_config.current.subscription_resource_id}/resourceGroups/${var.databricks_workspace.name}-${module.databricks-rg.name}"
+      #computeMode = "Hybrid"
+      
       requiredNsgRules = "NoAzureDatabricksRules"
-      publicNetworkAccess = "Enabled"
+      publicNetworkAccess = "Enabled" # this gets disabled post deployment. It is kept enabled during provisioning to ensure continued connectivity while the private endpoint gets set up.
+
       parameters = { 
         
         customPrivateSubnetName = {
@@ -50,8 +45,22 @@ resource "azapi_resource" "databricks" {
           value = true
         }
       }
-      
-    }
+    }, var.databricks_config.protected_b ? local.protected_b : {}
+    )
+}
+
+resource "azapi_resource" "databricks" {
+  name      = "${var.env}-${var.group}-${var.project}-${var.databricks_workspace.name}-dbw"
+  type      = "Microsoft.Databricks/workspaces@2025-08-01-preview"
+  location  = var.location
+  parent_id = module.databricks-rg.id
+  tags = var.tags
+
+  body = {
+    sku = {
+        name = try(var.databricks_workspace.sku, "premium")
+      }
+    properties = local.workspace_properties
     
   }
 

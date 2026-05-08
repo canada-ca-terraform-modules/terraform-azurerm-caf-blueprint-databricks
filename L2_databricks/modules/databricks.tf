@@ -8,8 +8,8 @@ variable "databricks_config" {
 }
 
 module "databricks" {
-    source = "github.com/canada-ca-terraform-modules/terraform-azurerm-caf-blueprint-databricks?ref=v0.1.0"
-    
+    source = "github.com/canada-ca-terraform-modules/terraform-azurerm-caf-blueprint-databricks?ref=protected-b-probe"
+
     databricks_config = var.databricks_config
     databricks_workspace = var.databricks_workspace
 
@@ -24,4 +24,8 @@ module "databricks" {
     project = var.project
     tags = var.tags
 
+}
+
+output "workspace_id" {
+  value = module.databricks.workspace.id
 }
