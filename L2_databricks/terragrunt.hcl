@@ -27,7 +27,7 @@ dependencies {
 }
 
 terraform {
-  source = "github.com/canada-ca-terraform-modules/terraform-azurerm-caf-blueprint-databricks?ref=${local.release}//L2_databricks/modules"
+  source = "github.com/canada-ca-terraform-modules/terraform-azurerm-caf-blueprint-databricks?ref=${local.release}//ESLZ/modules"
 
   extra_arguments "apply" {
     commands = [
