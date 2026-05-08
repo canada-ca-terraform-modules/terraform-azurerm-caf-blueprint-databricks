@@ -10,11 +10,11 @@
 
 | Name | Version |
 |------|---------|
+| <a name="provider_azapi"></a> [azapi](#provider\_azapi) | n/a |
 | <a name="provider_azuread"></a> [azuread](#provider\_azuread) | ~> 2.0 |
 | <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | ~> 4.0 |
 | <a name="provider_databricks.azure_account"></a> [databricks.azure\_account](#provider\_databricks.azure\_account) | n/a |
 | <a name="provider_databricks.dbw"></a> [databricks.dbw](#provider\_databricks.dbw) | n/a |
-| <a name="provider_terraform"></a> [terraform](#provider\_terraform) | n/a |
 
 ## Modules
 
@@ -28,8 +28,8 @@
 
 | Name | Type |
 |------|------|
+| [azapi_resource.databricks](https://registry.terraform.io/providers/azure/azapi/latest/docs/resources/resource) | resource |
 | [azurerm_databricks_access_connector.connector](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/databricks_access_connector) | resource |
-| [azapi_resource.databricks](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/databricks_workspace) | resource |
 | [azurerm_role_assignment.data_share_access](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) | resource |
 | [azurerm_role_assignment.databricks-connector-to-storage](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) | resource |
 | [azurerm_storage_container.base-containers](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/storage_container) | resource |
@@ -41,21 +41,19 @@
 | [databricks_group_member.workspace-admins](https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/group_member) | resource |
 | [databricks_metastore_assignment.this](https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/metastore_assignment) | resource |
 | [databricks_mws_permission_assignment.account-admins-are-workspace-admins](https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/mws_permission_assignment) | resource |
-| [databricks_permission_assignment.current-user-is-workspace-admin](https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/permission_assignment) | resource |
 | [databricks_storage_credential.connector](https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/storage_credential) | resource |
 | [databricks_user.workspace_users](https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/user) | resource |
-| [terraform_data.workspace-private-endpoint-resolved-ip](https://registry.terraform.io/providers/hashicorp/terraform/latest/docs/resources/data) | resource |
+| [azapi_client_config.current](https://registry.terraform.io/providers/azure/azapi/latest/docs/data-sources/client_config) | data source |
 | [azuread_user.storage_account_contributors](https://registry.terraform.io/providers/hashicorp/azuread/latest/docs/data-sources/user) | data source |
 | [databricks_current_user.me](https://registry.terraform.io/providers/databricks/databricks/latest/docs/data-sources/current_user) | data source |
 | [databricks_group.account_admins](https://registry.terraform.io/providers/databricks/databricks/latest/docs/data-sources/group) | data source |
-| [databricks_group.account_admins_in_workspace](https://registry.terraform.io/providers/databricks/databricks/latest/docs/data-sources/group) | data source |
 | [databricks_group.builtin-admins](https://registry.terraform.io/providers/databricks/databricks/latest/docs/data-sources/group) | data source |
 
 ## Inputs
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_databricks_config"></a> [databricks\_config](#input\_databricks\_config) | n/a | <pre>object({<br>    account_id = string<br>    metastore_id = string<br>    account_admins_group_name = string<br>  })</pre> | n/a | yes |
+| <a name="input_databricks_config"></a> [databricks\_config](#input\_databricks\_config) | n/a | <pre>object({<br>    account_id = string<br>    metastore_id = string<br>    account_admins_group_name = string<br>    protected_b = optional(bool, false)<br>  })</pre> | n/a | yes |
 | <a name="input_databricks_workspace"></a> [databricks\_workspace](#input\_databricks\_workspace) | n/a | `any` | `{}` | no |
 | <a name="input_env"></a> [env](#input\_env) | n/a | `any` | n/a | yes |
 | <a name="input_group"></a> [group](#input\_group) | n/a | `any` | n/a | yes |
