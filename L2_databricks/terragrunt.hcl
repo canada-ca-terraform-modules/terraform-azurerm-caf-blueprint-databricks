@@ -77,6 +77,7 @@ inputs = {
   L1_terraform_remote_state_key                 = local.backend_config.L1_remote_state_key
   L1_terraform_remote_state_resource_group_name = local.backend_config.resource_group_name
   L1_terraform_remote_state_subscription_id     = local.config.subscription_id
-
+  module_version                                = local.release  
+  
   tags                                          = include.remote.inputs.tags
 }

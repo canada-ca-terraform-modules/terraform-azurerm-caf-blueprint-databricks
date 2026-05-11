@@ -7,8 +7,12 @@ variable "databricks_config" {
   type = any
 }
 
+variable "module_version" {
+  type = string
+}
+
 module "databricks" {
-    source = "github.com/canada-ca-terraform-modules/terraform-azurerm-caf-blueprint-databricks?ref=protected-b-probe"
+    source = "github.com/canada-ca-terraform-modules/terraform-azurerm-caf-blueprint-databricks?ref=${var.module_version}"
 
     databricks_config = var.databricks_config
     databricks_workspace = var.databricks_workspace
