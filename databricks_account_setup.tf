@@ -19,6 +19,8 @@ data "databricks_group" "account_admins" {
   display_name = var.databricks_config.account_admins_group_name
 
   provider = databricks.azure_account
+
+  depends_on = [ azapi_resource.databricks ]
 }
 
 resource "databricks_mws_permission_assignment" "account-admins-are-workspace-admins" {

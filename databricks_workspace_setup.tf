@@ -5,6 +5,8 @@ provider "databricks" {
 
 data "databricks_current_user" "me" {
   provider = databricks.dbw
+
+  depends_on = [ databricks_metastore_assignment.this ]
 }
 
 # data "databricks_group" "account_admins_in_workspace" {
