@@ -9,6 +9,7 @@ variable "databricks_config" {
 
 variable "module_version" {
   type = string
+  const = true # requires terraform 1.15+ or tofu 1.12+
 }
 
 module "databricks" {
