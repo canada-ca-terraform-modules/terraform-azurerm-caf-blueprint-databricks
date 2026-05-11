@@ -53,7 +53,7 @@
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_databricks_config"></a> [databricks\_config](#input\_databricks\_config) | n/a | <pre>object({<br>    account_id = string<br>    metastore_id = string<br>    account_admins_group_name = string<br>    protected_b = optional(bool, false)<br>  })</pre> | n/a | yes |
+| <a name="input_databricks_config"></a> [databricks\_config](#input\_databricks\_config) | n/a | <pre>object({<br>    account_id = string<br>    metastore_id = string<br>    account_admins_group_name = string<br>  })</pre> | n/a | yes |
 | <a name="input_databricks_workspace"></a> [databricks\_workspace](#input\_databricks\_workspace) | n/a | `any` | `{}` | no |
 | <a name="input_env"></a> [env](#input\_env) | n/a | `any` | n/a | yes |
 | <a name="input_group"></a> [group](#input\_group) | n/a | `any` | n/a | yes |
