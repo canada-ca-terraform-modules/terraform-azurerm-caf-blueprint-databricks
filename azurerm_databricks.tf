@@ -45,7 +45,7 @@ locals {
           value = true
         }
       }
-    }, var.databricks_config.protected_b ? local.protected_b : {}
+    }, lookup(var.databricks_workspace, "protected_b", false) ? local.protected_b : {}
     )
 }
 

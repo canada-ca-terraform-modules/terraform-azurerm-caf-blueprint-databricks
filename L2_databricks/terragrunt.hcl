@@ -2,16 +2,18 @@ locals {
   config = read_terragrunt_config("../config.hcl").locals
   backend_config = read_terragrunt_config("../remote_state.hcl").locals
   // Define the directory containing your tfvars files
-  tfvars_dir = "./config"
-  
-  // Load all tfvars files in the specified directory
-  all_tfvars = fileset(local.tfvars_dir, "*.tfvars")
-  tfvar_args = [for f in local.all_tfvars : "--var-file=${local.tfvars_dir}/${f}"]
 
-  all_json_tfvars = fileset(local.tfvars_dir, "*.tfvars.json")
-  tfvars_json_args = [for x in local.all_json_tfvars : "--var-file=${local.tfvars_dir}/${x}"]
+  tfvars_directory = "${get_terragrunt_dir()}/config"
 
-  merge_tfvars = concat(local.tfvar_args, local.tfvars_json_args)
+  tfvar_files = [ 
+    for file in fileset(local.tfvars_directory, "*.tfvars") :
+      "${local.tfvars_directory}/${file}" 
+  ]
+
+  databricks_config = jsondecode(read_tfvars_file("${local.tfvars_directory}/databricks.tfvars"))
+
+  # When set to false, the public access setting will be disabled post-deployment, and reenabled pre-destroy to ensure connectivity while the private endpoint is being configured/removed.
+  public_network_access = lookup(local.databricks_config.databricks_workspace, "public_network_access", true) 
 
   release = "v0.1.0" # Update with the desired release tag or branch
 }
@@ -32,11 +34,13 @@ terraform {
   before_hook "check_and_update_public_access" {
     commands = ["destroy"]
     execute  = ["./check-and-update-public-access.sh"]
+    if      = !local.public_network_access
   }
 
    after_hook "check_and_update_public_access" {
     commands = ["apply"]
     execute  = ["./check-and-update-public-access.sh"]
+    if      = !local.public_network_access
   }
 
   extra_arguments "apply" {
@@ -46,7 +50,7 @@ terraform {
     env_vars = {
       ARM_SUBSCRIPTION_ID = local.config.subscription_id
     }
-    arguments = try(get_env("TERRAGRUNT_PIPELINE_RUN"), "false") == "false" ? local.merge_tfvars : [] # Adding the dynamically generated tfvar files
+    required_var_files = get_env("TERRAGRUNT_PIPELINE_RUN", "false") == "false" ? local.tfvar_files : []
   }
   extra_arguments "tfvars_files" {
     commands = [
@@ -60,7 +64,7 @@ terraform {
     env_vars = {
       ARM_SUBSCRIPTION_ID = local.config.subscription_id
     }
-    arguments = local.merge_tfvars # Adding the dynamically generated tfvar files
+    required_var_files = local.tfvar_files
   }
 
 
