@@ -22,7 +22,7 @@
 |------|--------|---------|
 | <a name="module_databricks-pe"></a> [databricks-pe](#module\_databricks-pe) | github.com/canada-ca-terraform-modules/terraform-azurerm-caf-private_endpoint | v1.0.2 |
 | <a name="module_databricks-rg"></a> [databricks-rg](#module\_databricks-rg) | github.com/canada-ca-terraform-modules/terraform-azurerm-caf-resource_groups.git | v2.0.1 |
-| <a name="module_databricks-storage-account"></a> [databricks-storage-account](#module\_databricks-storage-account) | github.com/canada-ca-terraform-modules/terraform-azurerm-caf-storage_accountV2.git | v1.0.5 |
+| <a name="module_databricks-storage-account"></a> [databricks-storage-account](#module\_databricks-storage-account) | github.com/canada-ca-terraform-modules/terraform-azurerm-caf-storage_accountV2.git | v1.1.0 |
 
 ## Resources
 
