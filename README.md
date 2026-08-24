@@ -4,32 +4,31 @@
 | Name | Version |
 |------|---------|
 | <a name="requirement_azuread"></a> [azuread](#requirement\_azuread) | ~> 2.0 |
-| <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) | ~> 4.0 |
+| <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) | ~> 5.0 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
-| <a name="provider_azapi"></a> [azapi](#provider\_azapi) | n/a |
 | <a name="provider_azuread"></a> [azuread](#provider\_azuread) | ~> 2.0 |
-| <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | ~> 4.0 |
-| <a name="provider_databricks.azure_account"></a> [databricks.azure\_account](#provider\_databricks.azure\_account) | n/a |
-| <a name="provider_databricks.dbw"></a> [databricks.dbw](#provider\_databricks.dbw) | n/a |
+| <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | ~> 5.0 |
+| <a name="provider_databricks"></a> [databricks](#provider\_databricks) | n/a |
+| <a name="provider_terraform"></a> [terraform](#provider\_terraform) | n/a |
 
 ## Modules
 
 | Name | Source | Version |
 |------|--------|---------|
-| <a name="module_databricks-pe"></a> [databricks-pe](#module\_databricks-pe) | github.com/canada-ca-terraform-modules/terraform-azurerm-caf-private_endpoint | v1.0.2 |
-| <a name="module_databricks-rg"></a> [databricks-rg](#module\_databricks-rg) | github.com/canada-ca-terraform-modules/terraform-azurerm-caf-resource_groups.git | v2.0.1 |
-| <a name="module_databricks-storage-account"></a> [databricks-storage-account](#module\_databricks-storage-account) | github.com/canada-ca-terraform-modules/terraform-azurerm-caf-storage_accountV2.git | v1.1.0 |
+| <a name="module_databricks-pe"></a> [databricks-pe](#module\_databricks-pe) | github.com/canada-ca-terraform-modules/terraform-azurerm-caf-private_endpoint | v1.2.0 |
+| <a name="module_databricks-rg"></a> [databricks-rg](#module\_databricks-rg) | github.com/canada-ca-terraform-modules/terraform-azurerm-caf-resource_groups.git | v2.2.0 |
+| <a name="module_databricks-storage-account"></a> [databricks-storage-account](#module\_databricks-storage-account) | github.com/canada-ca-terraform-modules/terraform-azurerm-caf-storage_accountV2.git | v1.2.0 |
 
 ## Resources
 
 | Name | Type |
 |------|------|
-| [azapi_resource.databricks](https://registry.terraform.io/providers/azure/azapi/latest/docs/resources/resource) | resource |
 | [azurerm_databricks_access_connector.connector](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/databricks_access_connector) | resource |
+| [azurerm_databricks_workspace.databricks](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/databricks_workspace) | resource |
 | [azurerm_role_assignment.data_share_access](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) | resource |
 | [azurerm_role_assignment.databricks-connector-to-storage](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) | resource |
 | [azurerm_storage_container.base-containers](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/storage_container) | resource |
@@ -39,12 +38,11 @@
 | [databricks_grant.account_admins_can_manage_default_catalog](https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/grant) | resource |
 | [databricks_grant.account_admins_can_manage_external_locations](https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/grant) | resource |
 | [databricks_group_member.workspace-admins](https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/group_member) | resource |
-| [databricks_metastore_assignment.this](https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/metastore_assignment) | resource |
-| [databricks_mws_permission_assignment.account-admins-are-workspace-admins](https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/mws_permission_assignment) | resource |
 | [databricks_storage_credential.connector](https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/storage_credential) | resource |
 | [databricks_user.workspace_users](https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/user) | resource |
-| [azapi_client_config.current](https://registry.terraform.io/providers/azure/azapi/latest/docs/data-sources/client_config) | data source |
+| [terraform_data.databricks_workspace_is_joined](https://registry.terraform.io/providers/hashicorp/terraform/latest/docs/resources/data) | resource |
 | [azuread_user.storage_account_contributors](https://registry.terraform.io/providers/hashicorp/azuread/latest/docs/data-sources/user) | data source |
+| [databricks_current_metastore.this](https://registry.terraform.io/providers/databricks/databricks/latest/docs/data-sources/current_metastore) | data source |
 | [databricks_current_user.me](https://registry.terraform.io/providers/databricks/databricks/latest/docs/data-sources/current_user) | data source |
 | [databricks_group.account_admins](https://registry.terraform.io/providers/databricks/databricks/latest/docs/data-sources/group) | data source |
 | [databricks_group.builtin-admins](https://registry.terraform.io/providers/databricks/databricks/latest/docs/data-sources/group) | data source |
