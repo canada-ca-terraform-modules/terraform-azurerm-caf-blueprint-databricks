@@ -1,78 +1,42 @@
-data "azapi_client_config" "current" {
-}
+resource "azurerm_databricks_workspace" "databricks" {
+  name                = "${var.env}-${var.group}-${var.project}-${var.databricks_workspace.name}-dbw"
+  resource_group_name = module.databricks-rg.name
+  location            = var.location
+  sku                 = try(var.databricks_workspace.sku, "premium")
+  
+  managed_resource_group_name = "${var.databricks_workspace.name}-${module.databricks-rg.name}"
+  
+  # this gets disabled post deployment. It is kept enabled during provisioning to ensure continued connectivity while the private endpoint gets set up.
+  public_network_access_enabled = true
 
-locals {
-  protected_b = {
-    enhancedSecurityCompliance = {
-        automaticClusterUpdate = {
-          value = "Enabled"
-        }
-        complianceSecurityProfile = {
-          complianceStandards = [
-            "CANADA_PROTECTED_B"
-          ]
-          value = "Enabled"
-        }
-        enhancedSecurityMonitoring = {
-          value = "Enabled"
-        }
-      }
+  custom_parameters {
+    no_public_ip = true
+
+    virtual_network_id = var.vnet.id
+    public_subnet_name = var.subnets[var.databricks_workspace.public_subnet].object.name
+    public_subnet_network_security_group_association_id = var.subnets[var.databricks_workspace.public_subnet].object.id
+    private_subnet_name = var.subnets[var.databricks_workspace.private_subnet].object.name
+    private_subnet_network_security_group_association_id = var.subnets[var.databricks_workspace.private_subnet].object.id
   }
 
-  workspace_properties = merge({
-      managedResourceGroupId = "${data.azapi_client_config.current.subscription_resource_id}/resourceGroups/${var.databricks_workspace.name}-${module.databricks-rg.name}"
-      #computeMode = "Hybrid"
-      
-      requiredNsgRules = "NoAzureDatabricksRules"
-      publicNetworkAccess = "Enabled" # this gets disabled post deployment. It is kept enabled during provisioning to ensure continued connectivity while the private endpoint gets set up.
+  enhanced_security_compliance {
+    automatic_cluster_update_enabled = lookup(var.databricks_workspace, "protected_b", false)
+    compliance_security_profile_enabled = lookup(var.databricks_workspace, "protected_b", false)
+    compliance_security_profile_standards = lookup(var.databricks_workspace, "protected_b", false) ? ["CANADA_PROTECTED_B"] : null
+    enhanced_security_monitoring_enabled = lookup(var.databricks_workspace, "protected_b", false)
+  }
 
-      parameters = { 
-        
-        customPrivateSubnetName = {
-          type = "String"
-          value = var.subnets[var.databricks_workspace.private_subnet].object.name
-        }
-        customPublicSubnetName = {
-          type = "String"
-          value = var.subnets[var.databricks_workspace.public_subnet].object.name
-        }
-        customVirtualNetworkId = {
-          type = "String"
-          value = var.vnet.id
-        }
-        enableNoPublicIp = {
-          type = "Bool"
-          value = true
-        }
-      }
-    }, lookup(var.databricks_workspace, "protected_b", false) ? local.protected_b : {}
-    )
-}
-
-resource "azapi_resource" "databricks" {
-  name      = "${var.env}-${var.group}-${var.project}-${var.databricks_workspace.name}-dbw"
-  type      = "Microsoft.Databricks/workspaces@2025-08-01-preview"
-  location  = var.location
-  parent_id = module.databricks-rg.id
   tags = var.tags
 
-  body = {
-    sku = {
-        name = try(var.databricks_workspace.sku, "premium")
-      }
-    properties = local.workspace_properties
-    
-  }
-
-  response_export_values = ["*"]
-
   lifecycle {
-    ignore_changes = [ body.properties.publicNetworkAccess ]
+    ignore_changes = [
+      public_network_access_enabled,
+    ]
   }
 }
 
 module "databricks-pe" {
-  source = "github.com/canada-ca-terraform-modules/terraform-azurerm-caf-private_endpoint?ref=v1.0.2"
+  source = "github.com/canada-ca-terraform-modules/terraform-azurerm-caf-private_endpoint?ref=v1.2.0"
 
   private_endpoint = {
     resource_group = var.databricks_workspace.resource_group
@@ -82,19 +46,19 @@ module "databricks-pe" {
 
   resource_groups = local.resource_groups
   subnets = var.subnets
-  name = azapi_resource.databricks.output.name
-  location = azapi_resource.databricks.output.location
-  private_connection_resource_id = azapi_resource.databricks.id
+  name = azurerm_databricks_workspace.databricks.name
+  location = azurerm_databricks_workspace.databricks.location
+  private_connection_resource_id = azurerm_databricks_workspace.databricks.id
   tags = var.tags
 
-  depends_on = [ azapi_resource.databricks ]
+  depends_on = [ azurerm_databricks_workspace.databricks ]
 
 }
 
 resource "azurerm_databricks_access_connector" "connector" {
-  name                = "${azapi_resource.databricks.name}-con"
+  name                = "${azurerm_databricks_workspace.databricks.name}-con"
   resource_group_name = module.databricks-rg.name
-  location            = azapi_resource.databricks.output.location
+  location            = azurerm_databricks_workspace.databricks.location
 
   identity {
     type = "SystemAssigned"

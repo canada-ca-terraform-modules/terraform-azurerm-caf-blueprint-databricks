@@ -1,5 +1,5 @@
 module "databricks-storage-account" {
-  source   = "github.com/canada-ca-terraform-modules/terraform-azurerm-caf-storage_accountV2.git?ref=v1.1.0"
+  source   = "github.com/canada-ca-terraform-modules/terraform-azurerm-caf-storage_accountV2.git?ref=v1.2.0"
   
   userDefinedString = "${var.databricks_workspace.name}-sa"
 

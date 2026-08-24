@@ -1,27 +1,53 @@
 provider "databricks" {
-  alias = "dbw"
-  host = azapi_resource.databricks.output.properties.workspaceUrl
+  #alias = "dbw"
+  host = azurerm_databricks_workspace.databricks.workspace_url
+}
+
+data "databricks_current_metastore" "this" {
+  # provider = databricks.dbw 
+
+  depends_on = [ 
+    azurerm_databricks_workspace.databricks,
+  ]
+}
+
+resource "terraform_data" "databricks_workspace_is_joined" {
+  input = {
+    metastore_id = data.databricks_current_metastore.this.id
+  }
+
+  depends_on = [ azurerm_databricks_workspace.databricks ]
+}
+
+locals {
+  workspace_is_joined = try(terraform_data.databricks_workspace_is_joined.output.id != "no_metastore", false)
 }
 
 data "databricks_current_user" "me" {
-  provider = databricks.dbw
+  # provider = databricks.dbw
 
-  depends_on = [ databricks_metastore_assignment.this ]
+  depends_on = [ 
+    azurerm_databricks_workspace.databricks,
+  ]
 }
 
-# data "databricks_group" "account_admins_in_workspace" {
-#   provider = databricks.dbw
+data "databricks_group" "account_admins" {
+  count = local.workspace_is_joined ? 1 : 0
+  # provider = databricks.dbw
 
-#   display_name = var.databricks_config.account_admins_group_name
-#   depends_on = [ databricks_metastore_assignment.this ]
-# }
+  display_name = var.databricks_config.account_admins_group_name
+
+  depends_on = [ 
+    azurerm_databricks_workspace.databricks,
+  ]
+}
 
 # resource "databricks_permission_assignment" "current-user-is-workspace-admin" {
   
 #   principal_id = data.databricks_current_user.me.id
 #   permissions = ["ADMIN"]
 
-#   provider = databricks.dbw
+#   # provider = databricks.dbw
 # }
 
 resource "databricks_user" "workspace_users" {
@@ -48,34 +74,32 @@ resource "databricks_user" "workspace_users" {
   
   workspace_access = try(each.value.user.workspace_access, true)
   
-  depends_on = [ databricks_metastore_assignment.this ]
-
-  provider = databricks.dbw
-
+  depends_on = [ azurerm_databricks_workspace.databricks ]
+  # provider = databricks.dbw
 }
 
 data "databricks_group" "builtin-admins" {
   display_name = "admins"
 
-  provider = databricks.dbw
-
-  depends_on = [ databricks_metastore_assignment.this ]
+  # provider = databricks.dbw
+  
+  depends_on = [ 
+    azurerm_databricks_workspace.databricks,
+  ]
 }
 
 resource "databricks_group_member" "workspace-admins" {
-  for_each = toset(var.databricks_workspace.workspace_admins)
+  for_each = local.workspace_is_joined ? toset(var.databricks_workspace.workspace_admins) : toset([])
 
   group_id  = data.databricks_group.builtin-admins.id
   member_id = databricks_user.workspace_users[each.value].id
 
-  provider = databricks.dbw
-
-  depends_on = [ 
-    databricks_mws_permission_assignment.account-admins-are-workspace-admins
-  ]
+  # provider = databricks.dbw
 }
 
 resource "databricks_storage_credential" "connector" {
+
+  count = local.workspace_is_joined ? 1 : 0
 
   name = lower("${azurerm_databricks_access_connector.connector.name}-sc")
   azure_managed_identity {
@@ -84,24 +108,31 @@ resource "databricks_storage_credential" "connector" {
 
   isolation_mode = "ISOLATION_MODE_ISOLATED"
 
-  provider = databricks.dbw
+  # provider = databricks.dbw
+
   depends_on = [ 
-    azurerm_databricks_access_connector.connector,
-    databricks_metastore_assignment.this
+    azurerm_databricks_workspace.databricks,
+    azurerm_databricks_access_connector.connector,    
   ]
+
 }
 
 resource "databricks_grant" "account_admins_can_manage_credential" {
   
-  storage_credential = databricks_storage_credential.connector.id
+  for_each = { 
+    for k, v in databricks_storage_credential.connector: 
+      v.name => v.id
+  }
 
-  principal = data.databricks_group.account_admins.display_name
+  storage_credential = each.value
+
+  principal = data.databricks_group.account_admins[0].display_name
   privileges = ["MANAGE"]
 
-  provider = databricks.dbw
+  # provider = databricks.dbw
 
   depends_on = [ 
-    databricks_metastore_assignment.this
+    azurerm_databricks_workspace.databricks,
   ]
 }
 
@@ -109,22 +140,23 @@ resource "databricks_external_location" "base-locations" {
 
   for_each = { for container in local.base_storage_containers :
     container => azurerm_storage_container.base-containers[container]
-    if lookup(azurerm_storage_container.base-containers, container, null) != null
+    if local.workspace_is_joined && lookup(azurerm_storage_container.base-containers, container, null) != null
   } 
 
   name = lower("${var.databricks_workspace.name}-${each.key}-el")
   url = format("abfss://%s@%s.dfs.core.windows.net/", each.key, module.databricks-storage-account.name )
-  credential_name = databricks_storage_credential.connector.name
+  credential_name = databricks_storage_credential.connector[0].name
 
   owner = data.databricks_current_user.me.user_name
 
   isolation_mode = "ISOLATION_MODE_ISOLATED"
 
-  provider = databricks.dbw
+  # provider = databricks.dbw
   depends_on = [ 
-    azurerm_storage_container.base-containers, 
-    databricks_metastore_assignment.this
+    azurerm_databricks_workspace.databricks,
+    azurerm_storage_container.base-containers
   ]
+
 }
 
 resource "databricks_grant" "account_admins_can_manage_external_locations" {
@@ -136,17 +168,20 @@ for_each = {
 
   external_location = each.value.id
 
-  principal = data.databricks_group.account_admins.display_name
+  principal = data.databricks_group.account_admins[0].display_name
   privileges = ["MANAGE"]
 
-  provider = databricks.dbw
+  # provider = databricks.dbw
+
   depends_on = [ 
-    databricks_mws_permission_assignment.account-admins-are-workspace-admins
+    azurerm_databricks_workspace.databricks,
   ]
 }
 
 resource "databricks_catalog" "default_catalog" {
   
+  count = local.workspace_is_joined ? 1 : 0
+
   metastore_id = var.databricks_config.metastore_id
   name = "${var.databricks_workspace.name}_default_catalog"
   owner = data.databricks_current_user.me.user_name
@@ -155,24 +190,29 @@ resource "databricks_catalog" "default_catalog" {
   
   isolation_mode = "ISOLATED"
 
-  provider = databricks.dbw
+  # provider = databricks.dbw
 
   depends_on = [ 
-    databricks_metastore_assignment.this
+    azurerm_databricks_workspace.databricks,
   ]
-
 }
 
 resource "databricks_grant" "account_admins_can_manage_default_catalog" {
   
-  catalog = databricks_catalog.default_catalog.id
+  for_each = {
+    for k, v in databricks_catalog.default_catalog : 
+      v.name => v.id
+  }
 
-  principal = data.databricks_group.account_admins.display_name
+  catalog = each.value
+
+  principal = data.databricks_group.account_admins[0].display_name
   privileges = ["MANAGE"]
 
-  provider = databricks.dbw
-
+  # provider = databricks.dbw
+  
   depends_on = [ 
-    databricks_mws_permission_assignment.account-admins-are-workspace-admins
+    azurerm_databricks_workspace.databricks,
   ]
+
 }
