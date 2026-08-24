@@ -49,9 +49,9 @@ data "azuread_user" "storage_account_contributors" {
 
 resource "azurerm_role_assignment" "data_share_access" {
   for_each = { 
-    for key, user in data.azuread_user.storage_account_contributors: 
-      key => {
-        object_id = user.object_id
+    for user in var.databricks_workspace.storage.data_share_access: 
+      user => {
+        object_id = data.azuread_user.storage_account_contributors[user].object_id
         scope = module.databricks-storage-account.id
       } 
   }
