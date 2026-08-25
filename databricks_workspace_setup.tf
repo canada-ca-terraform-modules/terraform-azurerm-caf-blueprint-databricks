@@ -63,17 +63,19 @@ resource "databricks_user" "workspace_users" {
 
   display_name = try(each.value.user.display_name, null)
   external_id = try(each.value.user.external_id, null)
-  allow_cluster_create = try(each.value.user.allow_cluster_create, false)
-  allow_instance_pool_create = try(each.value.user.allow_instance_pool_create, false)
+  allow_cluster_create = try(each.value.user.allow_cluster_create, null)
+  allow_instance_pool_create = try(each.value.user.allow_instance_pool_create, null)
   databricks_sql_access = try(each.value.user.databricks_sql_access, null)
-  active = try(each.value.user.active, true)
+  
+  active = try(each.value.user.active, null)
   force = try(each.value.user.force, null)
 
-  force_delete_repos = try(each.value.user.force_delete_repos, false)
-  force_delete_home_dir = try(each.value.user.force_delete_home_dir, false)
+  force_delete_repos = try(each.value.user.force_delete_repos, null)
+  force_delete_home_dir = try(each.value.user.force_delete_home_dir, null)
   
   workspace_access = try(each.value.user.workspace_access, true)
-  
+  workspace_consume = try(each.value.user.workspace_consume, null)
+
   depends_on = [ azurerm_databricks_workspace.databricks ]
   # provider = databricks.dbw
 }
@@ -119,12 +121,9 @@ resource "databricks_storage_credential" "connector" {
 
 resource "databricks_grant" "account_admins_can_manage_credential" {
   
-  for_each = { 
-    for k, v in databricks_storage_credential.connector: 
-      v.name => v.id
-  }
+  count = local.workspace_is_joined ? 1 : 0
 
-  storage_credential = each.value
+  storage_credential = databricks_storage_credential.connector[0].name
 
   principal = data.databricks_group.account_admins[0].display_name
   privileges = ["MANAGE"]
@@ -140,7 +139,7 @@ resource "databricks_external_location" "base-locations" {
 
   for_each = { for container in local.base_storage_containers :
     container => azurerm_storage_container.base-containers[container]
-    if local.workspace_is_joined && lookup(azurerm_storage_container.base-containers, container, null) != null
+    if local.workspace_is_joined
   } 
 
   name = lower("${var.databricks_workspace.name}-${each.key}-el")
@@ -160,13 +159,10 @@ resource "databricks_external_location" "base-locations" {
 }
 
 resource "databricks_grant" "account_admins_can_manage_external_locations" {
-for_each = { 
-  for container in local.base_storage_containers : 
-    container => databricks_external_location.base-locations[container] 
-    if lookup(databricks_external_location.base-locations, container, null) != null
-  }
+  
+  count = local.workspace_is_joined ? length(databricks_external_location.base-locations) : 0
 
-  external_location = each.value.id
+  external_location = databricks_external_location.base-locations[count.index].name
 
   principal = data.databricks_group.account_admins[0].display_name
   privileges = ["MANAGE"]
@@ -198,13 +194,10 @@ resource "databricks_catalog" "default_catalog" {
 }
 
 resource "databricks_grant" "account_admins_can_manage_default_catalog" {
-  
-  for_each = {
-    for k, v in databricks_catalog.default_catalog : 
-      v.name => v.id
-  }
+ 
+  count = local.workspace_is_joined ? length(databricks_catalog.default_catalog) : 0
 
-  catalog = each.value
+  catalog = databricks_catalog.default_catalog[count.index].name
 
   principal = data.databricks_group.account_admins[0].display_name
   privileges = ["MANAGE"]
