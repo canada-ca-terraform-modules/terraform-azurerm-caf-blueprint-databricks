@@ -13,7 +13,6 @@
 | <a name="provider_azuread"></a> [azuread](#provider\_azuread) | ~> 2.0 |
 | <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | ~> 5.0 |
 | <a name="provider_databricks"></a> [databricks](#provider\_databricks) | n/a |
-| <a name="provider_terraform"></a> [terraform](#provider\_terraform) | n/a |
 
 ## Modules
 
@@ -40,11 +39,9 @@
 | [databricks_group_member.workspace-admins](https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/group_member) | resource |
 | [databricks_storage_credential.connector](https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/storage_credential) | resource |
 | [databricks_user.workspace_users](https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/user) | resource |
-| [terraform_data.databricks_workspace_is_joined](https://registry.terraform.io/providers/hashicorp/terraform/latest/docs/resources/data) | resource |
 | [azuread_user.storage_account_contributors](https://registry.terraform.io/providers/hashicorp/azuread/latest/docs/data-sources/user) | data source |
 | [databricks_current_metastore.this](https://registry.terraform.io/providers/databricks/databricks/latest/docs/data-sources/current_metastore) | data source |
 | [databricks_current_user.me](https://registry.terraform.io/providers/databricks/databricks/latest/docs/data-sources/current_user) | data source |
-| [databricks_group.account_admins](https://registry.terraform.io/providers/databricks/databricks/latest/docs/data-sources/group) | data source |
 | [databricks_group.builtin-admins](https://registry.terraform.io/providers/databricks/databricks/latest/docs/data-sources/group) | data source |
 
 ## Inputs
