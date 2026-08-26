@@ -11,16 +11,8 @@ data "databricks_current_metastore" "this" {
   ]
 }
 
-resource "terraform_data" "databricks_workspace_is_joined" {
-  input = {
-    metastore_id = data.databricks_current_metastore.this.id
-  }
-
-  depends_on = [ azurerm_databricks_workspace.databricks ]
-}
-
 locals {
-  workspace_is_joined = try(terraform_data.databricks_workspace_is_joined.output.id != "no_metastore", false)
+  workspace_is_joined = try(data.databricks_current_metastore.this.id != "no_metastore", false)
 }
 
 data "databricks_current_user" "me" {
@@ -30,25 +22,6 @@ data "databricks_current_user" "me" {
     azurerm_databricks_workspace.databricks,
   ]
 }
-
-data "databricks_group" "account_admins" {
-  count = local.workspace_is_joined ? 1 : 0
-  # provider = databricks.dbw
-
-  display_name = var.databricks_config.account_admins_group_name
-
-  depends_on = [ 
-    azurerm_databricks_workspace.databricks,
-  ]
-}
-
-# resource "databricks_permission_assignment" "current-user-is-workspace-admin" {
-  
-#   principal_id = data.databricks_current_user.me.id
-#   permissions = ["ADMIN"]
-
-#   # provider = databricks.dbw
-# }
 
 resource "databricks_user" "workspace_users" {
   for_each = {
@@ -125,7 +98,7 @@ resource "databricks_grant" "account_admins_can_manage_credential" {
 
   storage_credential = databricks_storage_credential.connector[0].name
 
-  principal = data.databricks_group.account_admins[0].display_name
+  principal =  var.databricks_config.account_admins_group_name
   privileges = ["MANAGE"]
 
   # provider = databricks.dbw
@@ -160,11 +133,14 @@ resource "databricks_external_location" "base-locations" {
 
 resource "databricks_grant" "account_admins_can_manage_external_locations" {
   
-  count = local.workspace_is_joined ? length(databricks_external_location.base-locations) : 0
+  for_each = { for container in local.base_storage_containers :
+    container => azurerm_storage_container.base-containers[container]
+    if local.workspace_is_joined
+  }
 
-  external_location = databricks_external_location.base-locations[count.index].name
+  external_location = databricks_external_location.base-locations[each.key].name
 
-  principal = data.databricks_group.account_admins[0].display_name
+  principal = var.databricks_config.account_admins_group_name
   privileges = ["MANAGE"]
 
   # provider = databricks.dbw
@@ -199,7 +175,7 @@ resource "databricks_grant" "account_admins_can_manage_default_catalog" {
 
   catalog = databricks_catalog.default_catalog[count.index].name
 
-  principal = data.databricks_group.account_admins[0].display_name
+  principal = var.databricks_config.account_admins_group_name
   privileges = ["MANAGE"]
 
   # provider = databricks.dbw
