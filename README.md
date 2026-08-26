@@ -36,9 +36,12 @@
 | [databricks_grant.account_admins_can_manage_credential](https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/grant) | resource |
 | [databricks_grant.account_admins_can_manage_default_catalog](https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/grant) | resource |
 | [databricks_grant.account_admins_can_manage_external_locations](https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/grant) | resource |
+| [databricks_group.account-admins](https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/group) | resource |
+| [databricks_group_member.account-admins-are-workspace-admins](https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/group_member) | resource |
 | [databricks_group_member.workspace-admins](https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/group_member) | resource |
 | [databricks_storage_credential.connector](https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/storage_credential) | resource |
 | [databricks_user.workspace_users](https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/user) | resource |
+| [azuread_group.account-admins](https://registry.terraform.io/providers/hashicorp/azuread/latest/docs/data-sources/group) | data source |
 | [azuread_user.storage_account_contributors](https://registry.terraform.io/providers/hashicorp/azuread/latest/docs/data-sources/user) | data source |
 | [databricks_current_metastore.this](https://registry.terraform.io/providers/databricks/databricks/latest/docs/data-sources/current_metastore) | data source |
 | [databricks_current_user.me](https://registry.terraform.io/providers/databricks/databricks/latest/docs/data-sources/current_user) | data source |
