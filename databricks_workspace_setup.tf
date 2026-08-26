@@ -63,6 +63,36 @@ data "databricks_group" "builtin-admins" {
   ]
 }
 
+data "azuread_group" "account-admins" {
+  display_name = var.databricks_config.account_admins_group_name
+}
+
+resource "databricks_group" "account-admins" {
+  count = local.workspace_is_joined ? 1 : 0
+
+  display_name = data.azuread_group.account-admins.display_name
+  external_id = data.azuread_group.account-admins.object_id
+  
+  depends_on = [ 
+    azurerm_databricks_workspace.databricks,
+    data.azuread_group.account-admins
+  ]
+}
+
+resource "databricks_group_member" "account-admins-are-workspace-admins" {
+  count = local.workspace_is_joined ? 1 : 0
+
+  group_id  = data.databricks_group.builtin-admins.id
+  member_id = databricks_group.account-admins[0].id
+
+  # provider = databricks.dbw
+
+  depends_on = [ 
+    azurerm_databricks_workspace.databricks,
+    databricks_group.account-admins
+  ]
+}
+
 resource "databricks_group_member" "workspace-admins" {
   for_each = local.workspace_is_joined ? toset(var.databricks_workspace.workspace_admins) : toset([])
 
@@ -90,6 +120,11 @@ resource "databricks_storage_credential" "connector" {
     azurerm_databricks_access_connector.connector,    
   ]
 
+  lifecycle {  
+    ignore_changes = [
+      owner
+    ]
+  }
 }
 
 resource "databricks_grant" "account_admins_can_manage_credential" {
@@ -98,13 +133,14 @@ resource "databricks_grant" "account_admins_can_manage_credential" {
 
   storage_credential = databricks_storage_credential.connector[0].name
 
-  principal =  var.databricks_config.account_admins_group_name
+  principal =  databricks_group.account-admins[0].display_name
   privileges = ["MANAGE"]
 
   # provider = databricks.dbw
 
   depends_on = [ 
     azurerm_databricks_workspace.databricks,
+    databricks_group.account-admins
   ]
 }
 
@@ -129,6 +165,11 @@ resource "databricks_external_location" "base-locations" {
     azurerm_storage_container.base-containers
   ]
 
+  lifecycle {  
+    ignore_changes = [
+      owner
+    ]
+  }
 }
 
 resource "databricks_grant" "account_admins_can_manage_external_locations" {
@@ -140,13 +181,14 @@ resource "databricks_grant" "account_admins_can_manage_external_locations" {
 
   external_location = databricks_external_location.base-locations[each.key].name
 
-  principal = var.databricks_config.account_admins_group_name
+  principal = databricks_group.account-admins[0].display_name
   privileges = ["MANAGE"]
 
   # provider = databricks.dbw
 
   depends_on = [ 
     azurerm_databricks_workspace.databricks,
+    databricks_group.account-admins
   ]
 }
 
@@ -167,6 +209,12 @@ resource "databricks_catalog" "default_catalog" {
   depends_on = [ 
     azurerm_databricks_workspace.databricks,
   ]
+
+  lifecycle {  
+    ignore_changes = [
+      owner
+    ]
+  }
 }
 
 resource "databricks_grant" "account_admins_can_manage_default_catalog" {
@@ -175,13 +223,14 @@ resource "databricks_grant" "account_admins_can_manage_default_catalog" {
 
   catalog = databricks_catalog.default_catalog[count.index].name
 
-  principal = var.databricks_config.account_admins_group_name
+  principal = databricks_group.account-admins[0].display_name
   privileges = ["MANAGE"]
 
   # provider = databricks.dbw
   
   depends_on = [ 
     azurerm_databricks_workspace.databricks,
+    databricks_group.account-admins
   ]
 
 }
