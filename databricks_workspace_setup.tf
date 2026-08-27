@@ -3,9 +3,8 @@ provider "databricks" {
   host = azurerm_databricks_workspace.databricks.workspace_url
 }
 
-variable "ignore_metastore" {
-  type = bool
-  default = false
+variable "force_metastore_enabled" {
+  type = optional(bool)  
 }
 
 data "databricks_current_metastore" "this" {
@@ -17,7 +16,7 @@ data "databricks_current_metastore" "this" {
 }
 
 locals {
-  workspace_is_joined = var.ignore_metastore ? false : (data.databricks_current_metastore.this.id != "no_metastore")
+  workspace_is_joined = var.force_metastore_enabled != null ? var.force_metastore_enabled : (data.databricks_current_metastore.this.id != "no_metastore")
 }
 
 data "databricks_current_user" "me" {

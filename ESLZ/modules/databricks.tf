@@ -12,9 +12,8 @@ variable "module_version" {
   const = true # requires terraform 1.15+ or tofu 1.12+
 }
 
-variable "ignore_metastore" {
-  type = bool
-  default = false
+variable "force_metastore_enabled" {
+  type = optional(bool)
 }
 
 module "databricks" {
@@ -33,7 +32,7 @@ module "databricks" {
     group = var.group
     project = var.project
     tags = var.tags
-    ignore_metastore = var.ignore_metastore
+    force_metastore_enabled = var.force_metastore_enabled
 
 }
 
