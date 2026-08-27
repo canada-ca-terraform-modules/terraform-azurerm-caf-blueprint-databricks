@@ -12,6 +12,11 @@ variable "module_version" {
   const = true # requires terraform 1.15+ or tofu 1.12+
 }
 
+variable "ignore_metastore" {
+  type = bool
+  default = false
+}
+
 module "databricks" {
     source = "github.com/canada-ca-terraform-modules/terraform-azurerm-caf-blueprint-databricks?ref=${var.module_version}"
 
@@ -28,6 +33,7 @@ module "databricks" {
     group = var.group
     project = var.project
     tags = var.tags
+    ignore_metastore = var.ignore_metastore
 
 }
 

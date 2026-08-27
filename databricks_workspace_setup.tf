@@ -3,6 +3,11 @@ provider "databricks" {
   host = azurerm_databricks_workspace.databricks.workspace_url
 }
 
+variable "ignore_metastore" {
+  type = bool
+  default = false
+}
+
 data "databricks_current_metastore" "this" {
   # provider = databricks.dbw 
 
@@ -12,7 +17,7 @@ data "databricks_current_metastore" "this" {
 }
 
 locals {
-  workspace_is_joined = try(data.databricks_current_metastore.this.id != "no_metastore", false)
+  workspace_is_joined = var.ignore_metastore ? false : (data.databricks_current_metastore.this.id != "no_metastore")
 }
 
 data "databricks_current_user" "me" {
@@ -94,7 +99,7 @@ resource "databricks_group_member" "account-admins-are-workspace-admins" {
 }
 
 resource "databricks_group_member" "workspace-admins" {
-  for_each = local.workspace_is_joined ? toset(var.databricks_workspace.workspace_admins) : toset([])
+  for_each = toset(var.databricks_workspace.workspace_admins)
 
   group_id  = data.databricks_group.builtin-admins.id
   member_id = databricks_user.workspace_users[each.value].id
@@ -151,7 +156,7 @@ resource "databricks_external_location" "base-locations" {
     if local.workspace_is_joined
   } 
 
-  name = lower("${var.databricks_workspace.name}-${each.key}-el")
+  name = lower("${azurerm_databricks_workspace.databricks.name}-${each.key}-el")
   url = format("abfss://%s@%s.dfs.core.windows.net/", each.key, module.databricks-storage-account.name )
   credential_name = databricks_storage_credential.connector[0].name
 
@@ -197,7 +202,7 @@ resource "databricks_catalog" "default_catalog" {
   count = local.workspace_is_joined ? 1 : 0
 
   metastore_id = var.databricks_config.metastore_id
-  name = "${var.databricks_workspace.name}_default_catalog"
+  name = "${azurerm_databricks_workspace.databricks.name}_default_catalog"
   owner = data.databricks_current_user.me.user_name
     
   storage_root = databricks_external_location.base-locations["catalog"].url

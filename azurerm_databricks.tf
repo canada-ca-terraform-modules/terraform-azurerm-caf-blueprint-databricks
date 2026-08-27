@@ -6,6 +6,8 @@ resource "azurerm_databricks_workspace" "databricks" {
   
   managed_resource_group_name = "${var.databricks_workspace.name}-${module.databricks-rg.name}"
   
+  network_security_group_rules_required = "NoAzureDatabricksRules"
+  
   # this gets disabled post deployment. It is kept enabled during provisioning to ensure continued connectivity while the private endpoint gets set up.
   public_network_access_enabled = true
 
