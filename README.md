@@ -54,7 +54,7 @@
 | <a name="input_databricks_config"></a> [databricks\_config](#input\_databricks\_config) | n/a | <pre>object({<br>    account_id = string<br>    metastore_id = string<br>    account_admins_group_name = string<br>  })</pre> | n/a | yes |
 | <a name="input_databricks_workspace"></a> [databricks\_workspace](#input\_databricks\_workspace) | n/a | `any` | `{}` | no |
 | <a name="input_env"></a> [env](#input\_env) | n/a | `any` | n/a | yes |
-| <a name="input_force_metastore_enabled"></a> [force\_metastore\_enabled](#input\_force\_metastore\_enabled) | n/a | `optional(bool)` | n/a | yes |
+| <a name="input_force_metastore_enabled"></a> [force\_metastore\_enabled](#input\_force\_metastore\_enabled) | n/a | `bool` | `null` | no |
 | <a name="input_group"></a> [group](#input\_group) | n/a | `any` | n/a | yes |
 | <a name="input_location"></a> [location](#input\_location) | n/a | `any` | n/a | yes |
 | <a name="input_project"></a> [project](#input\_project) | n/a | `any` | n/a | yes |
