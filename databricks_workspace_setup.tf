@@ -4,7 +4,8 @@ provider "databricks" {
 }
 
 variable "force_metastore_enabled" {
-  type = optional(bool)  
+  type = bool
+  default = null
 }
 
 data "databricks_current_metastore" "this" {

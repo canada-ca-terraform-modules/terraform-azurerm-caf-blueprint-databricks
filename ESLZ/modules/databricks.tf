@@ -13,7 +13,8 @@ variable "module_version" {
 }
 
 variable "force_metastore_enabled" {
-  type = optional(bool)
+  type = bool
+  default = null
 }
 
 module "databricks" {
