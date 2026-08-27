@@ -1,40 +1,44 @@
-resource "azurerm_databricks_workspace" "this" {
-
-  name                        = "${var.env}-${var.group}-${var.project}-${var.databricks_workspace.name}-dbw"
-  resource_group_name         = module.databricks-rg.name
-  location                    = module.databricks-rg.location
-  sku                         = try(var.databricks_workspace.sku, "premium")
+resource "azurerm_databricks_workspace" "databricks" {
+  name                = "${var.env}-${var.group}-${var.project}-${var.databricks_workspace.name}-dbw"
+  resource_group_name = module.databricks-rg.name
+  location            = var.location
+  sku                 = try(var.databricks_workspace.sku, "premium")
   
-  #TODO: use our naming for the managed RG as well. Can't be the same as the workspace RG
   managed_resource_group_name = "${var.databricks_workspace.name}-${module.databricks-rg.name}"
-
-  public_network_access_enabled = false
+  
   network_security_group_rules_required = "NoAzureDatabricksRules"
-
-  tags                        = var.tags
+  
+  # this gets disabled post deployment. It is kept enabled during provisioning to ensure continued connectivity while the private endpoint gets set up.
+  public_network_access_enabled = true
 
   custom_parameters {
-    # no_public_ip                                         = false
-    virtual_network_id                                   = var.vnet.id
-    
-    private_subnet_network_security_group_association_id = var.subnets[var.databricks_workspace.private_subnet].id
-    private_subnet_name                                  = var.subnets[var.databricks_workspace.private_subnet].object.name
+    no_public_ip = true
 
-    public_subnet_network_security_group_association_id  = var.subnets[var.databricks_workspace.public_subnet].id
-    public_subnet_name                                   = var.subnets[var.databricks_workspace.public_subnet].object.name
+    virtual_network_id = var.vnet.id
+    public_subnet_name = var.subnets[var.databricks_workspace.public_subnet].object.name
+    public_subnet_network_security_group_association_id = var.subnets[var.databricks_workspace.public_subnet].object.id
+    private_subnet_name = var.subnets[var.databricks_workspace.private_subnet].object.name
+    private_subnet_network_security_group_association_id = var.subnets[var.databricks_workspace.private_subnet].object.id
   }
 
-  # https://learn.microsoft.com/en-us/azure/databricks/security/privacy/security-profile
-  # enhanced_security_compliance {
-  #   compliance_security_profile_enabled = true
-  #   compliance_security_profile_standards = ["HIPAA", "PCI_DSS"]
-  #   automatic_cluster_update_enabled = false
-  #   enhanced_security_monitoring_enabled = false
-  # }
+  enhanced_security_compliance {
+    automatic_cluster_update_enabled = lookup(var.databricks_workspace, "protected_b", false)
+    compliance_security_profile_enabled = lookup(var.databricks_workspace, "protected_b", false)
+    compliance_security_profile_standards = lookup(var.databricks_workspace, "protected_b", false) ? ["CANADA_PROTECTED_B"] : null
+    enhanced_security_monitoring_enabled = lookup(var.databricks_workspace, "protected_b", false)
+  }
+
+  tags = var.tags
+
+  lifecycle {
+    ignore_changes = [
+      public_network_access_enabled,
+    ]
+  }
 }
 
 module "databricks-pe" {
-  source = "github.com/canada-ca-terraform-modules/terraform-azurerm-caf-private_endpoint?ref=v1.0.2"
+  source = "github.com/canada-ca-terraform-modules/terraform-azurerm-caf-private_endpoint?ref=v1.2.0"
 
   private_endpoint = {
     resource_group = var.databricks_workspace.resource_group
@@ -44,19 +48,19 @@ module "databricks-pe" {
 
   resource_groups = local.resource_groups
   subnets = var.subnets
-  name = azurerm_databricks_workspace.this.name
-  location = azurerm_databricks_workspace.this.location
-  private_connection_resource_id = azurerm_databricks_workspace.this.id
+  name = azurerm_databricks_workspace.databricks.name
+  location = azurerm_databricks_workspace.databricks.location
+  private_connection_resource_id = azurerm_databricks_workspace.databricks.id
   tags = var.tags
 
-  depends_on = [ azurerm_databricks_workspace.this ]
+  depends_on = [ azurerm_databricks_workspace.databricks ]
 
 }
 
 resource "azurerm_databricks_access_connector" "connector" {
-  name                = "${azurerm_databricks_workspace.this.name}-con"
-  resource_group_name = azurerm_databricks_workspace.this.resource_group_name
-  location            = azurerm_databricks_workspace.this.location
+  name                = "${azurerm_databricks_workspace.databricks.name}-con"
+  resource_group_name = module.databricks-rg.name
+  location            = azurerm_databricks_workspace.databricks.location
 
   identity {
     type = "SystemAssigned"

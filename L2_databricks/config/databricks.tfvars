@@ -1,10 +1,19 @@
+databricks_config = {
+  account_id = "00000000-0000-0000-0000-000000000000" # can be found in the accounts.azuredatabricks.net 
+  metastore_id = "00000000-0000-0000-0000-000000000000" # can be found in the accounts.azuredatabricks.net 
+  account_admins_group_name = "admins-group" # the group that is granted workspace admin permissions. Can be an account-level group or an Entra group, if automatic provisioning is enabled.
+}
+
 databricks_workspace = {
   name = "testing"
   
+  #protected_b = false
+  #public_network_access = false
+
   # Leveraging existing subnets in the LZ vnet
   private_subnet = "PRIVATE"
   public_subnet = "PUBLIC"
-  
+
   # Subnet for workspace private endpoint
   pe_subnet = "OZ"
 

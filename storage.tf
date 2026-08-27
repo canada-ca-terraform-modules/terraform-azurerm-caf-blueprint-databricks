@@ -1,5 +1,5 @@
 module "databricks-storage-account" {
-  source   = "github.com/canada-ca-terraform-modules/terraform-azurerm-caf-storage_accountV2.git?ref=v1.0.5"
+  source   = "github.com/canada-ca-terraform-modules/terraform-azurerm-caf-storage_accountV2.git?ref=v1.2.0"
   
   userDefinedString = "${var.databricks_workspace.name}-sa"
 
@@ -49,9 +49,9 @@ data "azuread_user" "storage_account_contributors" {
 
 resource "azurerm_role_assignment" "data_share_access" {
   for_each = { 
-    for key, user in data.azuread_user.storage_account_contributors: 
-      key => {
-        object_id = user.object_id
+    for user in var.databricks_workspace.storage.data_share_access: 
+      user => {
+        object_id = data.azuread_user.storage_account_contributors[user].object_id
         scope = module.databricks-storage-account.id
       } 
   }
@@ -61,9 +61,12 @@ resource "azurerm_role_assignment" "data_share_access" {
   principal_id         = each.value.object_id
 }
 
+locals {
+  base_storage_containers = toset(["catalog", "data"])
+}
 resource "azurerm_storage_container" "base-containers" {
 
-  for_each = toset(["catalog", "data"])
+  for_each = local.base_storage_containers
 
   name = each.key
   storage_account_id = module.databricks-storage-account.id

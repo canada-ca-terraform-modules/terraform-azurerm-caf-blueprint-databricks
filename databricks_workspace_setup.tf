@@ -1,66 +1,31 @@
 provider "databricks" {
-  alias = "dbw"
-  host = azurerm_databricks_workspace.this.workspace_url
+  #alias = "dbw"
+  host = azurerm_databricks_workspace.databricks.workspace_url
 }
 
-resource "terraform_data" "workspace-private-endpoint-resolved-ip" {
-  
-  input = {
-    local_ip = module.databricks-pe.private-endpoint-object.private_service_connection[0].private_ip_address
-    workspace_fqdn = azurerm_databricks_workspace.this.workspace_url
-  }
+variable "force_metastore_enabled" {
+  type = bool
+  default = null
+}
 
-  provisioner "local-exec" {
-    environment = {
-      url = azurerm_databricks_workspace.this.workspace_url
-      expected_ip = module.databricks-pe.private-endpoint-object.private_service_connection[0].private_ip_address
-    }
+data "databricks_current_metastore" "this" {
+  # provider = databricks.dbw 
 
-    when = create
+  depends_on = [ 
+    azurerm_databricks_workspace.databricks,
+  ]
+}
 
-    command = <<-EOT
-    timeout_seconds=2000 # DNS TTL is 1800s, and Private DNS takes a few minutes to deploy
-    sleep_seconds=30
-
-    while [ $timeout_seconds -gt 0 ]; do
-      ip=$(getent hosts $url | awk '{ print $1 }')
-      timeout_seconds=$((timeout_seconds - sleep_seconds))
-
-      if [ "$ip" = "$expected_ip" ]; then
-        echo "$ip is looked up correctly. Ok to proceed with workspace configuration."
-        exit 0
-      fi
-      echo "Resolved as $ip instead of $expected_ip. Sleeping for $sleep_seconds seconds."
-      sleep $sleep_seconds
-    done
-    echo "Timeout of $sleep_seconds seconds reached"
-    exit 1
-EOT
-  }
-
-  depends_on = [ databricks_metastore_assignment.this ]
+locals {
+  workspace_is_joined = var.force_metastore_enabled != null ? var.force_metastore_enabled : (data.databricks_current_metastore.this.id != "no_metastore")
 }
 
 data "databricks_current_user" "me" {
-  provider = databricks.dbw
+  # provider = databricks.dbw
 
-  depends_on = [ terraform_data.workspace-private-endpoint-resolved-ip ]
-}
-
-data "databricks_group" "account_admins_in_workspace" {
-  provider = databricks.dbw
-
-  display_name = var.databricks_config.account_admins_group_name
-  depends_on = [ databricks_mws_permission_assignment.account-admins-are-workspace-admins ]
-}
-
-resource "databricks_permission_assignment" "current-user-is-workspace-admin" {
-  
-  principal_id = data.databricks_current_user.me.id
-  permissions = ["ADMIN"]
-
-  provider = databricks.dbw
-  depends_on = [ terraform_data.workspace-private-endpoint-resolved-ip ]
+  depends_on = [ 
+    azurerm_databricks_workspace.databricks,
+  ]
 }
 
 resource "databricks_user" "workspace_users" {
@@ -76,32 +41,60 @@ resource "databricks_user" "workspace_users" {
 
   display_name = try(each.value.user.display_name, null)
   external_id = try(each.value.user.external_id, null)
-  allow_cluster_create = try(each.value.user.allow_cluster_create, false)
-  allow_instance_pool_create = try(each.value.user.allow_instance_pool_create, false)
+  allow_cluster_create = try(each.value.user.allow_cluster_create, null)
+  allow_instance_pool_create = try(each.value.user.allow_instance_pool_create, null)
   databricks_sql_access = try(each.value.user.databricks_sql_access, null)
-  active = try(each.value.user.active, true)
+  
+  active = try(each.value.user.active, null)
   force = try(each.value.user.force, null)
 
-  force_delete_repos = try(each.value.user.force_delete_repos, false)
-  force_delete_home_dir = try(each.value.user.force_delete_home_dir, false)
+  force_delete_repos = try(each.value.user.force_delete_repos, null)
+  force_delete_home_dir = try(each.value.user.force_delete_home_dir, null)
   
   workspace_access = try(each.value.user.workspace_access, true)
-  
-  depends_on = [ 
-    databricks_permission_assignment.current-user-is-workspace-admin
-  ]
+  workspace_consume = try(each.value.user.workspace_consume, null)
 
-  provider = databricks.dbw
-
+  depends_on = [ azurerm_databricks_workspace.databricks ]
+  # provider = databricks.dbw
 }
 
 data "databricks_group" "builtin-admins" {
   display_name = "admins"
 
-  provider = databricks.dbw
+  # provider = databricks.dbw
+  
+  depends_on = [ 
+    azurerm_databricks_workspace.databricks,
+  ]
+}
+
+data "azuread_group" "account-admins" {
+  display_name = var.databricks_config.account_admins_group_name
+}
+
+resource "databricks_group" "account-admins" {
+  count = local.workspace_is_joined ? 1 : 0
+
+  display_name = data.azuread_group.account-admins.display_name
+  external_id = data.azuread_group.account-admins.object_id
+  
+  depends_on = [ 
+    azurerm_databricks_workspace.databricks,
+    data.azuread_group.account-admins
+  ]
+}
+
+resource "databricks_group_member" "account-admins-are-workspace-admins" {
+  count = local.workspace_is_joined ? 1 : 0
+
+  group_id  = data.databricks_group.builtin-admins.id
+  member_id = databricks_group.account-admins[0].id
+
+  # provider = databricks.dbw
 
   depends_on = [ 
-    databricks_permission_assignment.current-user-is-workspace-admin
+    azurerm_databricks_workspace.databricks,
+    databricks_group.account-admins
   ]
 }
 
@@ -111,14 +104,12 @@ resource "databricks_group_member" "workspace-admins" {
   group_id  = data.databricks_group.builtin-admins.id
   member_id = databricks_user.workspace_users[each.value].id
 
-  provider = databricks.dbw
-
-  depends_on = [ 
-    databricks_permission_assignment.current-user-is-workspace-admin
-  ]
+  # provider = databricks.dbw
 }
 
 resource "databricks_storage_credential" "connector" {
+
+  count = local.workspace_is_joined ? 1 : 0
 
   name = lower("${azurerm_databricks_access_connector.connector.name}-sc")
   azure_managed_identity {
@@ -127,77 +118,124 @@ resource "databricks_storage_credential" "connector" {
 
   isolation_mode = "ISOLATION_MODE_ISOLATED"
 
-  provider = databricks.dbw
+  # provider = databricks.dbw
+
   depends_on = [ 
-    azurerm_databricks_access_connector.connector,
-    databricks_permission_assignment.current-user-is-workspace-admin
+    azurerm_databricks_workspace.databricks,
+    azurerm_databricks_access_connector.connector,    
   ]
+
+  lifecycle {  
+    ignore_changes = [
+      owner
+    ]
+  }
 }
 
 resource "databricks_grant" "account_admins_can_manage_credential" {
   
-  storage_credential = databricks_storage_credential.connector.id
+  count = local.workspace_is_joined ? 1 : 0
 
-  principal = data.databricks_group.account_admins_in_workspace.display_name
+  storage_credential = databricks_storage_credential.connector[0].name
+
+  principal =  databricks_group.account-admins[0].display_name
   privileges = ["MANAGE"]
 
-  provider = databricks.dbw
+  # provider = databricks.dbw
+
+  depends_on = [ 
+    azurerm_databricks_workspace.databricks,
+    databricks_group.account-admins
+  ]
 }
 
 resource "databricks_external_location" "base-locations" {
 
-  for_each = azurerm_storage_container.base-containers
+  for_each = { for container in local.base_storage_containers :
+    container => azurerm_storage_container.base-containers[container]
+    if local.workspace_is_joined
+  } 
 
-  name = lower("${var.databricks_workspace.name}-${each.key}-el")
-  url = format("abfss://%s@%s.dfs.core.windows.net/", each.value.name, module.databricks-storage-account.name )
-  credential_name = databricks_storage_credential.connector.name
+  name = lower("${azurerm_databricks_workspace.databricks.name}-${each.key}-el")
+  url = format("abfss://%s@%s.dfs.core.windows.net/", each.key, module.databricks-storage-account.name )
+  credential_name = databricks_storage_credential.connector[0].name
 
   owner = data.databricks_current_user.me.user_name
 
   isolation_mode = "ISOLATION_MODE_ISOLATED"
 
-  provider = databricks.dbw
+  # provider = databricks.dbw
   depends_on = [ 
-    azurerm_storage_container.base-containers, 
-    databricks_permission_assignment.current-user-is-workspace-admin
+    azurerm_databricks_workspace.databricks,
+    azurerm_storage_container.base-containers
   ]
+
+  lifecycle {  
+    ignore_changes = [
+      owner
+    ]
+  }
 }
 
 resource "databricks_grant" "account_admins_can_manage_external_locations" {
-  for_each = databricks_external_location.base-locations
+  
+  for_each = { for container in local.base_storage_containers :
+    container => azurerm_storage_container.base-containers[container]
+    if local.workspace_is_joined
+  }
 
-  external_location = each.value.id
+  external_location = databricks_external_location.base-locations[each.key].name
 
-  principal = data.databricks_group.account_admins_in_workspace.display_name
+  principal = databricks_group.account-admins[0].display_name
   privileges = ["MANAGE"]
 
-  provider = databricks.dbw
+  # provider = databricks.dbw
+
+  depends_on = [ 
+    azurerm_databricks_workspace.databricks,
+    databricks_group.account-admins
+  ]
 }
 
 resource "databricks_catalog" "default_catalog" {
   
+  count = local.workspace_is_joined ? 1 : 0
+
   metastore_id = var.databricks_config.metastore_id
-  name = "${var.databricks_workspace.name}_default_catalog"
+  name = "${azurerm_databricks_workspace.databricks.name}_default_catalog"
   owner = data.databricks_current_user.me.user_name
     
   storage_root = databricks_external_location.base-locations["catalog"].url
   
   isolation_mode = "ISOLATED"
 
-  provider = databricks.dbw
+  # provider = databricks.dbw
 
   depends_on = [ 
-    databricks_permission_assignment.current-user-is-workspace-admin
+    azurerm_databricks_workspace.databricks,
   ]
 
+  lifecycle {  
+    ignore_changes = [
+      owner
+    ]
+  }
 }
 
 resource "databricks_grant" "account_admins_can_manage_default_catalog" {
-  
-  catalog = databricks_catalog.default_catalog.id
+ 
+  count = local.workspace_is_joined ? length(databricks_catalog.default_catalog) : 0
 
-  principal = data.databricks_group.account_admins_in_workspace.display_name
+  catalog = databricks_catalog.default_catalog[count.index].name
+
+  principal = databricks_group.account-admins[0].display_name
   privileges = ["MANAGE"]
 
-  provider = databricks.dbw
+  # provider = databricks.dbw
+  
+  depends_on = [ 
+    azurerm_databricks_workspace.databricks,
+    databricks_group.account-admins
+  ]
+
 }
